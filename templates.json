@@ -22,5 +22,30 @@
       "Google AI",
       "TypeSafe"
     ]
+  },
+  {
+    "name": "support-insights",
+    "title": "Support Ticket Insights",
+    "description": "Extract products, features, error codes, versions and integrations from customer support tickets and route each ticket to the right queue. An LLM drafts the entity annotations, people curate them, a pretrained pipeline suggests the generic entity types, and the passes are adjudicated into a gold set that trains a custom spaCy NER pipeline and a separate routing classifier.",
+    "use_cases": [
+      "Information Extraction",
+      "Text Classification",
+      "LLM Distillation",
+      "Evaluation"
+    ],
+    "counts": {
+      "tasks": 8,
+      "actions": 6,
+      "agents": 1,
+      "services": 2,
+      "recipes": 0,
+      "plans": 4
+    },
+    "url": "https://github.com/explosion/ellf-templates/tree/main/support-insights",
+    "author": "Explosion",
+    "sample_data": true,
+    "api_keys": [
+      "Google AI"
+    ]
   }
 ]

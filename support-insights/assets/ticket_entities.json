@@ -1,0 +1,91 @@
+{
+  "PRODUCT": {
+    "description": "A named product in the Meridian suite.",
+    "do_not_mark": [
+      "generic references like \"the app\" or \"the platform\"",
+      "a trailing noun after the name, like \"dashboard\" in \"the Meridian Cloud dashboard\""
+    ],
+    "examples": [
+      {
+        "text": "Complete outage on Meridian API v2.9.14 for our Paris office. Everything returns HTTP 429.",
+        "spans": [
+          {"text": "Meridian API", "label": "PRODUCT"},
+          {"text": "v2.9.14", "label": "VERSION"},
+          {"text": "HTTP 429", "label": "ERROR_CODE"}
+        ]
+      }
+    ]
+  },
+  "FEATURE": {
+    "description": "A named capability inside a product.",
+    "do_not_mark": [
+      "verbs describing an action, like \"exporting\" or \"logging in\"",
+      "determiners: annotate \"billing portal\", not \"the billing portal\""
+    ],
+    "examples": [
+      {
+        "text": "Can we get a refund for the duplicate $49 charge on May 22? It appears twice in the audit log.",
+        "spans": [
+          {"text": "audit log", "label": "FEATURE"}
+        ]
+      },
+      {
+        "text": "Does Meridian API support exporting scheduled reports data to Zapier on a schedule?",
+        "spans": [
+          {"text": "Meridian API", "label": "PRODUCT"},
+          {"text": "scheduled reports", "label": "FEATURE"},
+          {"text": "Zapier", "label": "INTEGRATION"}
+        ]
+      }
+    ]
+  },
+  "ERROR_CODE": {
+    "description": "An error identifier, including HTTP statuses.",
+    "do_not_mark": [
+      "free-text error messages, like \"connection refused\"",
+      "the word \"error\" in front of the code"
+    ],
+    "examples": [
+      {
+        "text": "Webhooks rejects our Okta credentials with E2210 since April 17.",
+        "spans": [
+          {"text": "Webhooks", "label": "FEATURE"},
+          {"text": "Okta", "label": "INTEGRATION"},
+          {"text": "E2210", "label": "ERROR_CODE"}
+        ]
+      }
+    ]
+  },
+  "VERSION": {
+    "description": "A release identifier of the vendor's own software.",
+    "do_not_mark": [
+      "version numbers of the customer's operating system or browser"
+    ],
+    "examples": [
+      {
+        "text": "CSV export in Meridian Cloud v3.4.0 started failing with SYNC-409 after we upgraded on March 3.",
+        "spans": [
+          {"text": "CSV export", "label": "FEATURE"},
+          {"text": "Meridian Cloud", "label": "PRODUCT"},
+          {"text": "v3.4.0", "label": "VERSION"},
+          {"text": "SYNC-409", "label": "ERROR_CODE"}
+        ]
+      }
+    ]
+  },
+  "INTEGRATION": {
+    "description": "A third-party service the product connects to. Decided by its role in the sentence, not by the company: \"syncing to Spotify\" is an integration, \"our team at Spotify\" is not.",
+    "do_not_mark": [
+      "a company named as the customer, like \"our team at Spotify\""
+    ],
+    "examples": [
+      {
+        "text": "Is there a way to connect Meridian Mobile to Slack so records sync automatically?",
+        "spans": [
+          {"text": "Meridian Mobile", "label": "PRODUCT"},
+          {"text": "Slack", "label": "INTEGRATION"}
+        ]
+      }
+    ]
+  }
+}

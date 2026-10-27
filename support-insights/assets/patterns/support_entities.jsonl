@@ -1,0 +1,43 @@
+{"label": "PRODUCT", "pattern": [{"LOWER": "meridian"}, {"LOWER": "cloud"}]}
+{"label": "PRODUCT", "pattern": [{"LOWER": "meridian"}, {"LOWER": "desktop"}]}
+{"label": "PRODUCT", "pattern": [{"LOWER": "meridian"}, {"LOWER": "mobile"}]}
+{"label": "PRODUCT", "pattern": [{"LOWER": "meridian"}, {"LOWER": "api"}]}
+{"label": "PRODUCT", "pattern": [{"LOWER": "meridian"}, {"LOWER": "analytics"}]}
+{"label": "PRODUCT", "pattern": [{"LOWER": "meridian"}, {"LOWER": "connect"}]}
+{"label": "FEATURE", "pattern": [{"LOWER": "sso"}, {"LOWER": "login"}]}
+{"label": "FEATURE", "pattern": [{"LOWER": "billing"}, {"LOWER": "portal"}]}
+{"label": "FEATURE", "pattern": [{"LOWER": "csv"}, {"LOWER": "export"}]}
+{"label": "FEATURE", "pattern": [{"LOWER": "webhooks"}]}
+{"label": "FEATURE", "pattern": [{"LOWER": "audit"}, {"LOWER": "log"}]}
+{"label": "FEATURE", "pattern": [{"LOWER": "two-factor"}, {"LOWER": "authentication"}]}
+{"label": "FEATURE", "pattern": [{"LOWER": "team"}, {"LOWER": "workspaces"}]}
+{"label": "FEATURE", "pattern": [{"LOWER": "scheduled"}, {"LOWER": "reports"}]}
+{"label": "FEATURE", "pattern": [{"LOWER": "search"}, {"LOWER": "filters"}]}
+{"label": "FEATURE", "pattern": [{"LOWER": "bulk"}, {"LOWER": "import"}]}
+{"label": "FEATURE", "pattern": [{"LOWER": "activity"}, {"LOWER": "feed"}]}
+{"label": "FEATURE", "pattern": [{"LOWER": "custom"}, {"LOWER": "dashboards"}]}
+{"label": "FEATURE", "pattern": [{"LOWER": "role-based"}, {"LOWER": "permissions"}]}
+{"label": "FEATURE", "pattern": [{"LOWER": "notification"}, {"LOWER": "centre"}]}
+{"label": "ERROR_CODE", "pattern": "ERR-4032"}
+{"label": "ERROR_CODE", "pattern": "ERR-5011"}
+{"label": "ERROR_CODE", "pattern": "E1004"}
+{"label": "ERROR_CODE", "pattern": "E2210"}
+{"label": "ERROR_CODE", "pattern": "SSO-TIMEOUT"}
+{"label": "ERROR_CODE", "pattern": "SYNC-409"}
+{"label": "ERROR_CODE", "pattern": "HTTP 502"}
+{"label": "ERROR_CODE", "pattern": "HTTP 429"}
+{"label": "ERROR_CODE", "pattern": "AUTH-1180"}
+{"label": "ERROR_CODE", "pattern": "IMPORT-77"}
+{"label": "INTEGRATION", "pattern": [{"LOWER": "slack"}]}
+{"label": "INTEGRATION", "pattern": [{"LOWER": "salesforce"}]}
+{"label": "INTEGRATION", "pattern": [{"LOWER": "jira"}]}
+{"label": "INTEGRATION", "pattern": [{"LOWER": "zapier"}]}
+{"label": "INTEGRATION", "pattern": [{"LOWER": "github"}]}
+{"label": "INTEGRATION", "pattern": [{"LOWER": "okta"}]}
+{"label": "INTEGRATION", "pattern": [{"LOWER": "stripe"}]}
+{"label": "INTEGRATION", "pattern": [{"LOWER": "hubspot"}]}
+{"label": "INTEGRATION", "pattern": [{"LOWER": "google"}, {"LOWER": "workspace"}]}
+{"label": "INTEGRATION", "pattern": [{"LOWER": "microsoft"}, {"LOWER": "teams"}]}
+{"label": "INTEGRATION", "pattern": [{"LOWER": "notion"}]}
+{"label": "INTEGRATION", "pattern": [{"LOWER": "snowflake"}]}
+{"label": "VERSION", "pattern": [{"TEXT": {"REGEX": "^v?\\d+\\.\\d+"}}]}

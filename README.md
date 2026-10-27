@@ -29,6 +29,16 @@ Find out whether Jev is good enough to route IT support tickets to the right tec
 | :---: | :---: | :---: | :---: | :---: | --- |
 | 9 | 3 | 1 | 4 | ✓ | Google AI, TypeSafe |
 
+### [Support Ticket Insights](support-insights)
+
+Extract products, features, error codes, versions and integrations from customer support tickets and route each ticket to the right queue. An LLM drafts the entity annotations, people curate them, a pretrained pipeline suggests the generic entity types, and the passes are adjudicated into a gold set that trains a custom spaCy NER pipeline and a separate routing classifier.
+
+**Use cases:** Information Extraction, Text Classification, LLM Distillation, Evaluation
+
+| Tasks | Actions | Agents | Services | Plans | Sample data | API keys |
+| :---: | :---: | :---: | :---: | :---: | :---: | --- |
+| 8 | 6 | 1 | 2 | 4 | ✓ | Google AI |
+
 ---
 
 _The list is kept in sync with [`templates.json`](templates.json), the source of truth for template metadata._

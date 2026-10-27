@@ -1,0 +1,49 @@
+{
+  "ORG": {
+    "description": "The customer's company.",
+    "do_not_mark": [
+      "the vendor's own name, Meridian",
+      "a third-party service the product connects to, like \"SSO via Okta\""
+    ],
+    "examples": [
+      {
+        "text": "Please move the Apple account from monthly to annual billing. Current charge is $75 per seat.",
+        "spans": [
+          {"text": "Apple", "label": "ORG"},
+          {"text": "$75", "label": "MONEY"}
+        ]
+      }
+    ]
+  },
+  "MONEY": {
+    "description": "A monetary amount, including the currency symbol.",
+    "do_not_mark": [
+      "seat counts and other quantities, like \"400+ records\""
+    ],
+    "examples": [
+      {
+        "text": "CSV export shows a past-due balance of $99 even though the payment cleared on May 22.",
+        "spans": [
+          {"text": "$99", "label": "MONEY"},
+          {"text": "May 22", "label": "DATE"}
+        ]
+      }
+    ]
+  },
+  "DATE": {
+    "description": "An absolute or relative date.",
+    "do_not_mark": [
+      "durations, like \"for three weeks\"",
+      "times of day without a date, like \"this morning\""
+    ],
+    "examples": [
+      {
+        "text": "Can we get a refund for the duplicate $49 charge on last Tuesday? It appears twice in CSV export.",
+        "spans": [
+          {"text": "$49", "label": "MONEY"},
+          {"text": "last Tuesday", "label": "DATE"}
+        ]
+      }
+    ]
+  }
+}

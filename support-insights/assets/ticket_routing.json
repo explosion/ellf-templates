@@ -1,0 +1,69 @@
+{
+  "BILLING": {
+    "description": "Charges, invoices, refunds, renewals and plan changes.",
+    "do_not_mark": [
+      "a request for a paid add-on that doesn't exist yet, which is a feature request"
+    ],
+    "examples": [
+      {
+        "text": "Our Meridian Cloud renewal came to $3,600 on August 14, which is more than the quote we agreed with sales.",
+        "label": "BILLING"
+      }
+    ]
+  },
+  "BUG_REPORT": {
+    "description": "Something is broken for one feature, user or workflow, while the rest of the product works.",
+    "do_not_mark": [
+      "failures affecting everyone or a whole office, which are outages",
+      "sign-in or credential failures, which are account access"
+    ],
+    "examples": [
+      {
+        "text": "We are seeing E1004 on every attempt to use webhooks. This is Meridian Cloud v4.0.2 on Windows.",
+        "label": "BUG_REPORT"
+      }
+    ]
+  },
+  "HOW_TO": {
+    "description": "A question about how to use or configure something that already exists.",
+    "do_not_mark": [
+      "asking for something the product can't do yet, which is a feature request"
+    ],
+    "examples": [
+      {
+        "text": "Is there a way to connect Meridian API to HubSpot so records sync automatically?",
+        "label": "HOW_TO"
+      }
+    ]
+  },
+  "FEATURE_REQUEST": {
+    "description": "A request for new functionality or a change to how a feature works.",
+    "examples": [
+      {
+        "text": "Feature request: allow webhooks to be scoped per workspace in Meridian Cloud v4.0.2.",
+        "label": "FEATURE_REQUEST"
+      }
+    ]
+  },
+  "OUTAGE": {
+    "description": "A product, feature or integration is down for all users, a whole office or the whole workspace.",
+    "do_not_mark": [
+      "a failure one team or one workflow hits, which is a bug report"
+    ],
+    "examples": [
+      {
+        "text": "Complete outage on Meridian Cloud 2026.7 for our London office. Everything returns ERR-4032.",
+        "label": "OUTAGE"
+      }
+    ]
+  },
+  "ACCOUNT_ACCESS": {
+    "description": "Signing in, SSO, credentials, invitations and lockouts.",
+    "examples": [
+      {
+        "text": "SSO login rejects our Google Workspace credentials with AUTH-1180 since May 22.",
+        "label": "ACCOUNT_ACCESS"
+      }
+    ]
+  }
+}
