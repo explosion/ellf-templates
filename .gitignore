@@ -1,0 +1,20 @@
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Python and recipe package builds
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# Secrets and local data (templates ship data only in assets/)
+.env
+.env.*
+data/
