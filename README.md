@@ -13,7 +13,7 @@ To use a template, run the [`ellf-template`](https://ellf.ai/docs/modules#templa
 /ellf-template Set up this project: https://github.com/explosion/ellf-templates/tree/main/helpdesk-routing
 ```
 
-The template documents what's needed to adapt it to your custom use case and data, and your coding agent will ask any required follow-up questions. If you prefer doing it manually, you can run the CLI commands included with the template.
+The template documents what's needed to adapt it to your custom use case and data, and your coding agent will ask any required follow-up questions and ask you for confirmation before creating anything. If you prefer doing it manually, you can run the CLI commands included with the template. Once all resources are created in the platform, the agent will make a final pass over the project plans, update the `@@` placeholders with the correct links and update the plans to reflect any modifications you made.
 
 You can also use `ellf-template` to [export](https://ellf.ai/docs/templates#create) any existing Ellf project to a reusable template to share your workflows with others or adapt them for different use cases. To contribute a template you've built, [get in touch](mailto:[[EMAIL]]?subject=Ellf%20Templates).
 
