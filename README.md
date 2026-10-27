@@ -1,4 +1,4 @@
-<a href="https://explosion.ai"><img src=".github/explosion.svg" width="100" alt="Explosion" align="right" /></a>
+<a href="https://explosion.ai"><img src="https://explosion.ai/assets/img/logo.svg" width="125" height="125" align="right" alt="Explosion" /></a>
 
 # Ellf Templates
 
