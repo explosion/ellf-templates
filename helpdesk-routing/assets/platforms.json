@@ -1,0 +1,60 @@
+{
+  "WINDOWS": {
+    "description": "The problem is on a Windows desktop or laptop (Windows 10, 11 or earlier), as the ticket names it or shows it beyond doubt: a C:\\ path, PowerShell, cmd, Explorer.",
+    "do_not_mark": [
+      "Windows Server (WINDOWS_SERVER)",
+      "an app inside WSL or a Linux VM on a Windows PC (LINUX)",
+      "a Windows PC that the user used to have and moved away from (the system they use now)"
+    ],
+    "examples": [
+      {"text": "How to change the default folder path of the installation of Android Studio? ... My operating system is Windows 10/11", "label": "WINDOWS"}
+    ]
+  },
+  "WINDOWS_SERVER": {
+    "description": "The problem is on Windows Server (2008 to 2025), as the ticket names it.",
+    "do_not_mark": [
+      "a Windows desktop or laptop that connects to a server (WINDOWS)"
+    ],
+    "examples": [
+      {"text": "Windows Server Backup Disk Space issues", "label": "WINDOWS_SERVER"}
+    ]
+  },
+  "LINUX": {
+    "description": "The problem is on Linux or another Unix system (Ubuntu, Debian, Fedora, RHEL, Arch and so on), including WSL and Linux VMs, as the ticket names it or shows it beyond doubt: apt, sudo, a /home path, ext4.",
+    "do_not_mark": [
+      "macOS, although it's Unix-based (MAC_MOBILE)"
+    ],
+    "examples": [
+      {"text": "Why is my Linux filesystem root low on disk space?", "label": "LINUX"},
+      {"text": "Kate Text Editor Line Ending Chars ... I recently converted a Windows 10 system to Linux.", "label": "LINUX"}
+    ]
+  },
+  "MAC_MOBILE": {
+    "description": "The problem is on a Mac (macOS), an iPhone or iPad, or an Android device.",
+    "do_not_mark": [
+      "Android Studio or an Android emulator running on a PC (the PC's system)"
+    ],
+    "examples": [
+      {"text": "How to delete an outbound message with an oversized attachment in the Mail app on macOS?", "label": "MAC_MOBILE"}
+    ]
+  },
+  "SEVERAL": {
+    "description": "The problem happens on more than one system, or the ticket names several systems and you can't tell which one the problem is on.",
+    "do_not_mark": [
+      "a ticket that mentions a second system, but the problem is clearly on one (that one)",
+      "a system the user moved away from (the system they use now)"
+    ],
+    "examples": [
+      {"text": "How do I stop \"Zmbie\" synced Chrome bookmarks re-appearing? I have three Windows Machines, an Android Tablet and two Android phones.", "label": "SEVERAL"}
+    ]
+  },
+  "UNSTATED": {
+    "description": "Nothing in the ticket shows which system the problem is on. Don't guess from the app: Excel, Word or git alone don't name a system.",
+    "do_not_mark": [
+      "a ticket that shows the system only through a path or command, e.g. C:\\Users or sudo (that system)"
+    ],
+    "examples": [
+      {"text": "Mail Merge in Word 365 for Business", "label": "UNSTATED"}
+    ]
+  }
+}

@@ -1,0 +1,163 @@
+{
+  "WINDOWS": {
+    "description": "The Windows desktop operating system itself: installing, booting, updates, settings, drivers, the taskbar and Explorer, built-in tools such as winget, signing in to Windows (including BitLocker recovery), and Windows scripting (PowerShell, cmd, batch files). Choose the area of the main problem the user needs fixed, not where they noticed it.",
+    "do_not_mark": [
+      "Windows Server problems (LINUX_AND_SERVERS)",
+      "choosing a boot device or boot order in the BIOS or boot menu (HARDWARE)",
+      "an app that misbehaves on Windows, such as Excel, Outlook or PowerToys (APPS)",
+      "network settings and network commands on Windows, such as Wi-Fi profiles, proxy settings, netsh or ping (NETWORK)",
+      "a disk, partition or file system problem that happens to be on Windows (STORAGE)"
+    ],
+    "examples": [
+      {
+        "text": "Windows Auto-Hide Taskbar crossing Multiple Displays",
+        "label": "WINDOWS"
+      },
+      {
+        "text": "How to remove languages from the language bar?",
+        "label": "WINDOWS"
+      },
+      {
+        "text": "How to list all saved WiFi profiles in Windows 10? (\"netsh wlan show profiles\" isn't enough)"
+      }
+    ]
+  },
+  "APPS": {
+    "description": "Applications and tools on any system: Office and Outlook, LibreOffice, browsers, email clients, media and file tools such as FFmpeg, yt-dlp, Pandoc, PDF and image editors, command-line and developer tools such as git, rsync, gpg and regular expressions, and hosted services used through an app or website, such as Microsoft 365 mail rules or an S3 bucket. Includes signing in to an app or online service, and an app running inside a virtual machine or Windows Sandbox.",
+    "do_not_mark": [
+      "the operating system itself misbehaving (WINDOWS or LINUX_AND_SERVERS)",
+      "Windows' built-in tools such as winget (WINDOWS)",
+      "a service the organisation runs on its own server, such as a web server, database or mail server (LINUX_AND_SERVERS)",
+      "an app on a Mac, iPhone, iPad or Android device (OTHER)"
+    ],
+    "examples": [
+      {
+        "text": "Excel: Return Column A if Condition X is met in Column B, C, or D",
+        "label": "APPS"
+      },
+      {
+        "text": "Edge in Windows Sandbox opens a blank window",
+        "label": "APPS"
+      },
+      {
+        "text": "Is there a way to empty all of the trash via Trash CLI or a similar command in Linux?",
+        "label": "APPS"
+      },
+      {
+        "text": "What does the \"L\" marker/icon in S3 file really mean? Does it mean \"latest\"?",
+        "label": "APPS"
+      }
+    ]
+  },
+  "HARDWARE": {
+    "description": "Physical devices and components: PCs and laptops, peripherals, printers, displays, power, batteries and UPS, BIOS and firmware, the boot menu and boot order (booting from USB or another drive), and drives that are dead, clicking or not detected at all.",
+    "do_not_mark": [
+      "drivers for a device that works physically (WINDOWS or LINUX_AND_SERVERS)",
+      "I/O errors, SMART warnings or bad sectors on a drive that still shows up (STORAGE)",
+      "a Mac, iPhone, iPad or Android device (OTHER)"
+    ],
+    "examples": [
+      {
+        "text": "Why doesn't my Surface Pro 7 start?",
+        "label": "HARDWARE"
+      },
+      {
+        "text": "Banks B1 and B2 don't allow POST, any help appreciated",
+        "label": "HARDWARE"
+      },
+      {
+        "text": "How to boot from a USB device on Lenovo ThinkPad T14s?",
+        "label": "HARDWARE"
+      },
+      {
+        "text": "Why I always encountered an I/O error and got crashed when creating a Timeshift snapshot?"
+      }
+    ]
+  },
+  "LINUX_AND_SERVERS": {
+    "description": "Linux and Unix systems (desktops and servers), including signing in and permissions on them, Windows Server, services the organisation runs on its own servers, and virtual machines and containers themselves.",
+    "do_not_mark": [
+      "setting up Windows Subsystem for Linux on a Windows desktop (WINDOWS)",
+      "an app or command-line tool misbehaving on Linux, such as Firefox, git, rsync or Trash CLI (APPS)",
+      "an app running inside a virtual machine or Windows Sandbox (APPS)",
+      "hosted services such as Microsoft 365 or an S3 bucket (APPS)",
+      "a network or VPN problem between machines rather than on the server itself (NETWORK)"
+    ],
+    "examples": [
+      {
+        "text": "Fedora KDE: Menu not responding any more",
+        "label": "LINUX_AND_SERVERS"
+      },
+      {
+        "text": "How to run app after reboot with access to UI on Windows Server 2022?",
+        "label": "LINUX_AND_SERVERS"
+      },
+      {
+        "text": "Nested virtualization not working, Ubuntu host, Windows 11 guest and VirtualBox 7",
+        "label": "LINUX_AND_SERVERS"
+      },
+      {
+        "text": "OpenVPN Access Server stops listening after install and restart",
+        "label": "LINUX_AND_SERVERS"
+      },
+      {
+        "text": "Edge in Windows Sandbox opens a blank window"
+      }
+    ]
+  },
+  "NETWORK": {
+    "description": "Wi-Fi, LAN and Ethernet, DNS, routers and switches, VPN, firewalls, proxies and remote access, on any device, when the network connection is the thing to fix. Includes network settings and network commands on any system (Wi-Fi profiles, proxy settings, netsh, ping) and signing in to network devices.",
+    "do_not_mark": [
+      "a self-hosted service, such as a VPN or web server, that is down on the server itself (LINUX_AND_SERVERS)",
+      "a network adapter or cable that is physically broken (HARDWARE)"
+    ],
+    "examples": [
+      {
+        "text": "How to list all saved WiFi profiles in Windows 10? (\"netsh wlan show profiles\" isn't enough)",
+        "label": "NETWORK"
+      },
+      {
+        "text": "How do I ping \"-hyphen.tumblr.com\"?",
+        "label": "NETWORK"
+      },
+      {
+        "text": "How to factory reset Edge-Core ECS3510-2BT programmable switches?",
+        "label": "NETWORK"
+      }
+    ]
+  },
+  "STORAGE": {
+    "description": "Disks, partitions, file systems, RAID, backup and data recovery on a drive that still shows up, even when it reports I/O errors or SMART warnings, on any system.",
+    "do_not_mark": [
+      "a drive that is dead, clicking or not detected at all (HARDWARE)",
+      "how a command-line or sync tool such as rsync behaves (APPS)",
+      "Windows failing to boot for a reason other than the disk (WINDOWS)"
+    ],
+    "examples": [
+      {
+        "text": "Why does raid5 rebuild after one disk failed risk making another disk fail?",
+        "label": "STORAGE"
+      },
+      {
+        "text": "Why I always encountered an I/O error and got crashed when creating a Timeshift snapshot?",
+        "label": "STORAGE"
+      },
+      {
+        "text": "rsync and delta changes on big volume files"
+      }
+    ]
+  },
+  "OTHER": {
+    "description": "The thing to fix is a Mac, iPhone, iPad or Android device, or an app on one, or the problem fits none of the areas above.",
+    "do_not_mark": [
+      "a router or Wi-Fi network problem that the user noticed on a phone (NETWORK)",
+      "a Linux server that a Mac connects to (LINUX_AND_SERVERS)"
+    ],
+    "examples": [
+      {
+        "text": "Is it possible to setup separate spaces and menu bars in macOS?",
+        "label": "OTHER"
+      }
+    ]
+  }
+}
