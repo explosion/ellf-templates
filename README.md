@@ -23,9 +23,11 @@ You can also use `ellf-template` to [export](https://ellf.ai/docs/templates#crea
 
 Find out whether Jev is good enough to route IT support tickets to the right technician by problem area. Settles the label scheme in a pilot with a Gemini second opinion, builds a human-labelled evaluation set with an agreement check and a blind slip check, scores Jev against a bar agreed in advance, and sets up daily routing with a monthly problem-area report.
 
-| Use cases | Tasks | Actions | Agents | Plans | Sample data | API keys |
-| --- | :---: | :---: | :---: | :---: | :---: | --- |
-| Text Classification, Evaluation | 9 | 3 | 1 | 4 | ✓ | Google AI, TypeSafe |
+**Use cases:** Text Classification, Evaluation
+
+| Tasks | Actions | Agents | Plans | Sample data | API keys |
+| :---: | :---: | :---: | :---: | :---: | --- |
+| 9 | 3 | 1 | 4 | ✓ | Google AI, TypeSafe |
 
 ---
 

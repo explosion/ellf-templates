@@ -10,7 +10,7 @@ When a template directory is added, or its README changes what the template incl
 
 ### 1. `templates.json`
 
-A JSON list with one object per template, in the same order as the README (newest first unless told otherwise). Read the template's README to fill in the fields:
+A JSON list with one object per template, in the same order as the README, with new templates added at the end. Read the template's README to fill in the fields:
 
 | Field | Value |
 | --- | --- |
@@ -35,13 +35,15 @@ Add or update the template's entry under "## Templates", in the same order as `t
 
 <description>
 
-| Use cases | Tasks | Actions | Agents | Plans | Sample data | API keys |
-| --- | --- | --- | --- | --- | --- | --- |
-| Text Classification, Evaluation | 9 | 3 | 1 | 4 | ✓ | Google AI, TypeSafe |
+**Use cases:** Text Classification, Evaluation
+
+| Tasks | Actions | Agents | Plans | Sample data | API keys |
+| :---: | :---: | :---: | :---: | :---: | --- |
+| 9 | 3 | 1 | 4 | ✓ | Google AI, TypeSafe |
 ```
 
-- The table starts with Use cases, `use_cases` comma-separated.
-- Then a column for each non-zero count, in the order Tasks, Actions, Agents, Services, Custom recipes (`recipes`), Plans.
+- **Use cases:** `use_cases`, comma-separated, as plain text.
+- The table has a column for each non-zero count, in the order Tasks, Actions, Agents, Services, Custom recipes (`recipes`), Plans.
 - Then Sample data, with ✓ if `sample_data` is true, and API keys, with `api_keys` comma-separated. Leave either column out if it would be empty.
 
 ## Checks
