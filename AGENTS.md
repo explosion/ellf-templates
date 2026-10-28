@@ -15,7 +15,7 @@ A JSON list with one object per template, in the same order as the README, with 
 | Field | Value |
 | --- | --- |
 | `name` | The directory name, e.g. `helpdesk-routing`. |
-| `title` | Title Case, from the README's `# [Ellf](https://ellf.ai) Template: <title>` heading. |
+| `title` | Title Case, from the README's `# Ellf Template: <title>` heading. |
 | `description` | Two or three sentences: what the project does, then what the workflow covers. Plain text, no markdown. |
 | `use_cases` | Reuse existing values where they fit: `Information Extraction`, `Named Entity Recognition`, `Text Classification`, `Relation Extraction`, `LLM Distillation`, `PDF Processing`, `Evaluation`, `Getting Started` (for simple templates to start with, listed first). |
 | `counts` | `tasks`, `actions`, `agents`, `services`: the number of sections under the README's Tasks, Actions, Agents and Services headings. `recipes`: custom recipe packages in `recipes/` (built-in recipes don't count). `plans`: the files in `plans/`. Include every key, with `0` where there are none. |

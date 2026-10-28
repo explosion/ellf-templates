@@ -1,4 +1,4 @@
-# [Ellf](https://ellf.ai) Template: Support Ticket Insights
+# Ellf Template: Support Ticket Insights
 
 Extract products, features, error codes, versions and integrations from customer support tickets, and route each ticket to the right queue. An LLM drafts the entity annotations, people curate the draft and annotate their own pass, a pretrained pipeline suggests the generic entity types, and the passes are adjudicated into a gold set that trains a custom spaCy NER pipeline and a separate routing classifier.
 

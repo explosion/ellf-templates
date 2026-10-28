@@ -1,4 +1,4 @@
-# [Ellf](https://ellf.ai) Template: GitHub Docs Issue Classifier
+# Ellf Template: GitHub Docs Issue Classifier
 
 Train a binary text classifier that predicts whether a GitHub issue is about documentation. You accept or reject one label, `DOCUMENTATION`, on each issue, then train a spaCy pipeline on your answers and get a model you can use to triage new issues.
 
