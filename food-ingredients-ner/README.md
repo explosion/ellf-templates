@@ -1,4 +1,4 @@
-# Ellf Template: Food Ingredient Extraction
+# [Ellf](https://ellf.ai) Template: Food Ingredient Extraction
 
 Train a named entity recognizer that finds food ingredients in text, e.g. to track which ingredients people talk about over time. You highlight ingredients in cooking comments with match patterns as suggestions, train a quick first model on CPU, and then a more accurate transformer-based pipeline on GPU.
 

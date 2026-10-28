@@ -1,4 +1,4 @@
-# Ellf Template: Helpdesk routing with Jev
+# [Ellf](https://ellf.ai) Template: Helpdesk routing with Jev
 
 Find out whether a hosted classifier, Jev, is good enough to route IT support tickets to the right technician by problem area, then put it to work. You settle the problem areas in a pilot with an LLM second opinion, build a human-labelled evaluation set, score Jev against a bar agreed in advance, and use it for daily routing and a monthly report of the most common problems.
 
