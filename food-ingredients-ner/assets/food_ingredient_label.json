@@ -1,0 +1,39 @@
+{
+  "INGRED": {
+    "description": "A food or drink used as an ingredient: produce, meat and fish, dairy, grains, spices, oils, condiments and named sauces, including general terms like \"meat\" or \"spices\". Include words that say which kind it is, e.g. \"ground beef\", \"yellow onions\", \"chicken stock\".",
+    "do_not_mark": [
+      "dishes and meals, e.g. pizza, soup, lasagna, burger, cake",
+      "a bare \"sauce\" or \"dressing\" without saying which one",
+      "quantities, preparation and cooking words, e.g. \"two cups of\", \"chopped\", \"fried\"",
+      "brands, kitchen equipment and restaurants"
+    ],
+    "examples": [
+      {
+        "text": "Brown the ground beef, then add the yellow onions and a splash of soy sauce.",
+        "spans": [
+          {
+            "text": "ground beef",
+            "label": "INGRED"
+          },
+          {
+            "text": "yellow onions",
+            "label": "INGRED"
+          },
+          {
+            "text": "soy sauce",
+            "label": "INGRED"
+          }
+        ]
+      },
+      {
+        "text": "Our go-to weeknight dinner is homemade pizza with fresh basil.",
+        "spans": [
+          {
+            "text": "basil",
+            "label": "INGRED"
+          }
+        ]
+      }
+    ]
+  }
+}

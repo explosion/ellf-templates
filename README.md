@@ -39,6 +39,26 @@ Extract products, features, error codes, versions and integrations from customer
 | :---: | :---: | :---: | :---: | :---: | :---: | --- |
 | 8 | 6 | 1 | 2 | 4 | ✓ | Google AI |
 
+### [GitHub Docs Issue Classifier](github-docs-issues)
+
+Train a binary text classifier that predicts whether a GitHub issue is about documentation. Annotate a single label with accept or reject on the included GitHub issues or your own, then train a spaCy pipeline on the answers.
+
+**Use cases:** Getting Started, Text Classification
+
+| Tasks | Actions | Plans | Sample data |
+| :---: | :---: | :---: | :---: |
+| 1 | 1 | 1 | ✓ |
+
+### [Food Ingredient Extraction](food-ingredients-ner)
+
+Train a named entity recognizer that finds food ingredients in cooking comments from Reddit or your own texts. Highlight ingredients with match patterns as suggestions, train a quick first model on CPU and a more accurate transformer-based pipeline on GPU, and optionally correct the first model's suggestions in a second round and check the annotations in a dashboard.
+
+**Use cases:** Getting Started, Information Extraction, Named Entity Recognition
+
+| Tasks | Actions | Services | Plans | GPU | Sample data |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| 2 | 2 | 1 | 1 | ✓ | ✓ |
+
 ---
 
 _The list is kept in sync with [`templates.json`](templates.json), the source of truth for template metadata._

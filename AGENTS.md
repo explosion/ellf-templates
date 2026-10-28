@@ -17,10 +17,11 @@ A JSON list with one object per template, in the same order as the README, with 
 | `name` | The directory name, e.g. `helpdesk-routing`. |
 | `title` | Title Case, from the README's `# Ellf Template: <title>` heading. |
 | `description` | Two or three sentences: what the project does, then what the workflow covers. Plain text, no markdown. |
-| `use_cases` | Reuse existing values where they fit: `Information Extraction`, `Text Classification`, `Relation Extraction`, `LLM Distillation`, `PDF Processing`, `Evaluation`. |
+| `use_cases` | Reuse existing values where they fit: `Information Extraction`, `Named Entity Recognition`, `Text Classification`, `Relation Extraction`, `LLM Distillation`, `PDF Processing`, `Evaluation`, `Getting Started` (for simple templates to start with, listed first). |
 | `counts` | `tasks`, `actions`, `agents`, `services`: the number of sections under the README's Tasks, Actions, Agents and Services headings. `recipes`: custom recipe packages in `recipes/` (built-in recipes don't count). `plans`: the files in `plans/`. Include every key, with `0` where there are none. |
 | `url` | `https://github.com/explosion/ellf-templates/tree/main/<name>` |
 | `author` | Who made it, e.g. `Explosion`. Leave it out if unknown. |
+| `gpu` | `true` if a job in the template can run on a GPU worker, e.g. transformer training with `--worker-class gpu`. Leave it out otherwise. |
 | `sample_data` | `true` if `assets/input/` holds data to try the workflow with, otherwise `false`. |
 | `api_keys` | The external services the template needs API keys for, by provider name (e.g. `Google AI`, `TypeSafe`), from the secrets under "What you need to provide". Leave it out if there are none. |
 
@@ -44,7 +45,7 @@ Add or update the template's entry under "## Templates", in the same order as `t
 
 - **Use cases:** `use_cases`, comma-separated, as plain text.
 - The table has a column for each non-zero count, in the order Tasks, Actions, Agents, Services, Custom recipes (`recipes`), Plans.
-- Then Sample data, with ✓ if `sample_data` is true, and API keys, with `api_keys` comma-separated. Leave either column out if it would be empty.
+- Then GPU, with ✓ if `gpu` is true, Sample data, with ✓ if `sample_data` is true, and API keys, with `api_keys` comma-separated. Leave any of these columns out if it would be empty.
 
 ## Checks
 

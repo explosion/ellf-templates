@@ -47,5 +47,47 @@
     "api_keys": [
       "Google AI"
     ]
+  },
+  {
+    "name": "github-docs-issues",
+    "title": "GitHub Docs Issue Classifier",
+    "description": "Train a binary text classifier that predicts whether a GitHub issue is about documentation. Annotate a single label with accept or reject on the included GitHub issues or your own, then train a spaCy pipeline on the answers.",
+    "use_cases": [
+      "Getting Started",
+      "Text Classification"
+    ],
+    "counts": {
+      "tasks": 1,
+      "actions": 1,
+      "agents": 0,
+      "services": 0,
+      "recipes": 0,
+      "plans": 1
+    },
+    "url": "https://github.com/explosion/ellf-templates/tree/main/github-docs-issues",
+    "author": "Explosion",
+    "sample_data": true
+  },
+  {
+    "name": "food-ingredients-ner",
+    "title": "Food Ingredient Extraction",
+    "description": "Train a named entity recognizer that finds food ingredients in cooking comments from Reddit or your own texts. Highlight ingredients with match patterns as suggestions, train a quick first model on CPU and a more accurate transformer-based pipeline on GPU, and optionally correct the first model's suggestions in a second round and check the annotations in a dashboard.",
+    "use_cases": [
+      "Getting Started",
+      "Information Extraction",
+      "Named Entity Recognition"
+    ],
+    "counts": {
+      "tasks": 2,
+      "actions": 2,
+      "agents": 0,
+      "services": 1,
+      "recipes": 0,
+      "plans": 1
+    },
+    "url": "https://github.com/explosion/ellf-templates/tree/main/food-ingredients-ner",
+    "author": "Explosion",
+    "gpu": true,
+    "sample_data": true
   }
 ]

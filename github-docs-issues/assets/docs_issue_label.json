@@ -1,0 +1,19 @@
+{
+  "DOCUMENTATION": {
+    "description": "The issue asks for, reports a problem with, or proposes a change to documentation: docs pages, READMEs, guides, tutorials, API references, code examples or docstrings.",
+    "do_not_mark": [
+      "a bug or feature request that only mentions the docs in passing, e.g. \"the docs say this should work, but it crashes\"",
+      "tools that generate documentation, e.g. a bug in a docs build plugin, unless the issue is about the resulting docs"
+    ],
+    "examples": [
+      {
+        "text": "Add FAQ's to the documentation",
+        "label": "DOCUMENTATION"
+      },
+      {
+        "text": "README install instructions are out of date",
+        "label": "DOCUMENTATION"
+      }
+    ]
+  }
+}
