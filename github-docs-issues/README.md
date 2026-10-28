@@ -2,7 +2,7 @@
 
 Train a binary text classifier that predicts whether a GitHub issue is about documentation. You accept or reject one label, `DOCUMENTATION`, on each issue, then train a spaCy pipeline on your answers and get a model you can use to triage new issues.
 
-*Adapted from the spaCy project [`textcat_docs_issues`](https://github.com/explosion/projects/tree/v3/tutorials/textcat_docs_issues) on 2026-10-28. Import it with the
+*Adapted for [Ellf](https://ellf.ai) from the spaCy project [`textcat_docs_issues`](https://github.com/explosion/projects/tree/v3/tutorials/textcat_docs_issues) on 2026-10-28. Import it with the
 [`/ellf-template`](https://ellf.ai/docs/modules#template) skill, or set it up by hand
 with the commands below.*
 

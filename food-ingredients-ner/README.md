@@ -2,7 +2,7 @@
 
 Train a named entity recognizer that finds food ingredients in text, e.g. to track which ingredients people talk about over time. You highlight ingredients in cooking comments with match patterns as suggestions, train a quick first model on CPU, and then a more accurate transformer-based pipeline on GPU.
 
-*Adapted from the spaCy project [`ner_food_ingredients`](https://github.com/explosion/projects/tree/v3/tutorials/ner_food_ingredients) on 2026-10-28. Import it with the
+*Adapted for [Ellf](https://ellf.ai) from the spaCy project [`ner_food_ingredients`](https://github.com/explosion/projects/tree/v3/tutorials/ner_food_ingredients) on 2026-10-28. Import it with the
 [`/ellf-template`](https://ellf.ai/docs/modules#template) skill, or set it up by hand
 with the commands below.*
 
