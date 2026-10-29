@@ -1,8 +1,10 @@
 # Settling disagreements
 
-Each text here is one where the annotator and the classifier gave different answers,
-or the annotator chose UNCLEAR. Both answers are shown with the text, as `LLM` and
-`Annotator`. Your answer becomes the reference label.
+Each text here is one where an annotator and the classifier gave different answers,
+or an annotator chose UNCLEAR. Every answer is shown as a version of the text,
+credited to where it came from: `LLM` for the classifier, and the annotation
+dataset for each annotator. Keep the version that's right, or pick another label.
+Your answer becomes the reference label.
 
 ## How to answer
 

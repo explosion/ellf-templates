@@ -35,9 +35,9 @@ Measure a classifier that's built on an LLM prompt against people, without chang
 
 **Use cases:** Evaluation, Text Classification
 
-| Tasks | Plans |
-| :---: | :---: |
-| 4 | 1 |
+| Tasks | Custom recipes | Plans |
+| :---: | :---: | :---: |
+| 4 | 1 | 1 |
 
 ### [Helpdesk Routing with Jev](helpdesk-routing)
 

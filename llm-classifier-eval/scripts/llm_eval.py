@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-"""Measure an LLM classifier against people: sample, score, adjudicate, and
-keep a gold set for re-scoring prompt changes.
+"""Measure an LLM classifier against people: sample its decisions, score
+them against the settled labels, and keep a gold set for re-scoring prompt
+changes.
 
 Usage:
     python scripts/llm_eval.py labels <labels.json> --out <annotation_labels.json>
@@ -10,8 +11,6 @@ Usage:
         --annotations <annotations.jsonl> [--adjudication <adjudication.jsonl>]
         [--predictions <predictions.jsonl>] [--show 10] [--bootstrap 1000]
     python scripts/llm_eval.py agreement <first.jsonl> <second.jsonl> --labels <labels.json>
-    python scripts/llm_eval.py adjudication --key <key.jsonl> --labels <labels.json>
-        --annotations <annotations.jsonl> --out <adjudication_input.jsonl>
     python scripts/llm_eval.py gold --key <key.jsonl> --labels <labels.json>
         --annotations <annotations.jsonl> [--adjudication <adjudication.jsonl>] --out <gold.jsonl>
 
@@ -31,8 +30,10 @@ sample
     can be measured. Every sampled record carries the weight that brings it
     back to its share of all records. Writes `blind.jsonl` (each distinct text
     once, shuffled, with only an id), `pilot.jsonl` and `second.jsonl` (random
-    subsets of it, for the pilot and a second annotator) and `key.jsonl` (the
-    LLM's label, stratum and weight of each sampled record).
+    subsets of it, for the pilot and a second annotator), `llm_labels.jsonl`
+    (each distinct text with the LLM's label, for the `llm_review` recipe that
+    adjudicates) and `key.jsonl` (the LLM's label, stratum and weight of each
+    sampled record).
 
 score
     The LLM against the gold labels (the annotations, overruled by the
@@ -46,10 +47,6 @@ score
 agreement
     Cohen's kappa and per-label agreement between two annotators on the texts
     both annotated.
-
-adjudication
-    An input for the adjudication task: every text where the annotator and the
-    LLM disagree, or the annotator chose UNCLEAR, with both answers in `meta`.
 
 gold
     The gold set to keep: each text with its gold label, the LLM's label and
@@ -215,6 +212,7 @@ def cmd_sample(args) -> None:
     print("LLM label: records, sampled, weight")
     key = []
     blind: dict[str, str] = {}
+    raw: dict[str, object] = {}
     for stratum in sorted(strata, key=lambda s: -len(strata[s])):
         rows = strata[stratum]
         n = min(len(rows), max(args.min_per_label, round(args.size * len(rows) / total)))
@@ -222,6 +220,7 @@ def cmd_sample(args) -> None:
         for row in rng.sample(rows, n):
             id_ = text_id(row["text"])
             blind.setdefault(id_, row["text"])
+            raw.setdefault(id_, row["meta"]["reference_label"])
             key.append({"id": id_, "llm": stratum, "stratum": stratum, "weight": weight})
         print(f"  {stratum}: {len(rows)}, {n}, {weight:.2f}")
     ids = list(blind)
@@ -232,10 +231,15 @@ def cmd_sample(args) -> None:
     write_jsonl(args.out_dir / "pilot.jsonl", blind_rows[: args.pilot])
     write_jsonl(args.out_dir / "second.jsonl", rng.sample(blind_rows, min(args.second, len(blind_rows))))
     write_jsonl(args.out_dir / "key.jsonl", key)
+    write_jsonl(
+        args.out_dir / "llm_labels.jsonl",
+        [{"text": blind[i], "meta": {"reference_label": raw[i]}} for i in ids],
+    )
     print(
         f"Wrote {len(blind_rows)} distinct texts ({len(key)} sampled records) to "
         f"{args.out_dir}/blind.jsonl, {min(args.pilot, len(blind_rows))} to pilot.jsonl, "
-        f"{min(args.second, len(blind_rows))} to second.jsonl, and the key to key.jsonl"
+        f"{min(args.second, len(blind_rows))} to second.jsonl, the LLM's labels to "
+        f"llm_labels.jsonl and the key to key.jsonl"
     )
 
 
@@ -406,22 +410,6 @@ def cmd_agreement(args) -> None:
         print(f"  {a} -> {b}: {count}")
 
 
-def cmd_adjudication(args) -> None:
-    scheme = read_scheme(args.labels, args.exclusive)
-    answers = read_answers(args.annotations, scheme, args.unclear)
-    llm = {k.id: k.llm for k in read_key(args.key)}
-    rows = []
-    for id_, (label, text) in answers.items():
-        if id_ in llm and (label == args.unclear or label != llm[id_]):
-            rows.append({"text": text, "meta": {"id": id_, "LLM": llm[id_], "Annotator": label}})
-    random.Random(args.seed).shuffle(rows)
-    write_jsonl(args.out, rows)
-    kinds = Counter((r["meta"]["Annotator"], r["meta"]["LLM"]) for r in rows)
-    print(f"Wrote {len(rows)} texts to adjudicate to {args.out}")
-    for (a, l), count in kinds.most_common():
-        print(f"  annotator {a}, LLM {l}: {count}")
-
-
 def cmd_gold(args) -> None:
     scheme = read_scheme(args.labels, args.exclusive)
     gold, texts = gold_labels(args, scheme)
@@ -484,14 +472,6 @@ def main() -> None:
     p.add_argument("second", type=Path)
     p.add_argument("--labels", type=Path, required=True)
     p.set_defaults(func=cmd_agreement)
-
-    p = add_parser("adjudication", help="input for the adjudication task")
-    p.add_argument("--key", type=Path, required=True)
-    p.add_argument("--labels", type=Path, required=True)
-    p.add_argument("--annotations", type=Path, required=True)
-    p.add_argument("--out", type=Path, required=True)
-    p.add_argument("--seed", type=int, default=0)
-    p.set_defaults(func=cmd_adjudication)
 
     p = add_parser("gold", help="the gold set to keep")
     p.add_argument("--key", type=Path, required=True)

@@ -40,10 +40,12 @@ measurement informs.
    annotator labels a random subset in @@Tasks/eval-second@@
    (@@Datasets/eval_second@@), for agreement: it says how much of the classifier's
    apparent error is just people disagreeing.
-4. **Adjudicate.** Every text where the annotator and the classifier disagree, or the
-   annotator chose UNCLEAR, is settled in @@Tasks/eval-adjudicate@@ with both answers
-   in view, following @@Assets/adjudication-guidelines@@, into
-   @@Datasets/eval_adjudication@@.
+4. **Adjudicate.** Every text where an annotator and the classifier disagree, or an
+   annotator chose UNCLEAR, is settled in @@Tasks/eval-adjudicate@@, which runs the
+   @@Recipes/llm_review@@ recipe: each answer is shown side by side, credited to the
+   classifier or the annotator who gave it, with @@Assets/eval-llm-labels@@ supplying
+   the classifier's. The reviewer follows @@Assets/adjudication-guidelines@@, and the
+   settled labels go to @@Datasets/eval_adjudication@@.
 5. **Score and report.** Accuracy, per-label precision and recall, and each label's
    rate as the classifier assigns it against its estimated true rate, with 95%
    intervals. The most common mistakes, with example texts, say what to change in

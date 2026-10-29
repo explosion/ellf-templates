@@ -24,16 +24,17 @@ evaluating generated text.
 ```mermaid
 flowchart LR
     accTitle: Evaluating an LLM classifier
-    accDescr: The LLM's past decisions are sampled locally into blind texts. A pilot task settles the definitions, the annotation task labels the whole sample, and an optional second annotator labels a subset for agreement. Disagreements between the annotator and the LLM are settled in an adjudication task, and a script scores the LLM against the result and writes a gold set for re-scoring prompt changes.
+    accDescr: The LLM's past decisions are sampled locally into blind texts and the LLM's labels for them. A pilot task settles the definitions, the annotation task labels the whole sample, and an optional second annotator labels a subset for agreement. The llm_review recipe shows every text where people and the LLM disagree with all the answers side by side, and a script scores the LLM against the settled labels and writes a gold set for re-scoring prompt changes.
     records[(LLM's past decisions, local)] -- llm_eval.py sample --> blind[(eval-blind)]
     records -- sample --> pilot[(eval-pilot)]
+    records -- sample --> llm[(eval-llm-labels)]
     pilot --> ptask[eval-pilot task]
     ptask -. debrief .-> blind
     blind --> atask[eval-annotate task]
     second[(eval-second)] --> stask[eval-second task]
     atask --> ads[(eval_annotations)]
-    ads -- llm_eval.py adjudication --> adjin[(eval-adjudication-input)]
-    adjin --> jtask[eval-adjudicate task]
+    stask --> sds[(eval_second)]
+    ads & sds & llm --> jtask[eval-adjudicate llm_review task]
     jtask --> jds[(eval_adjudication)]
     ads & jds -- llm_eval.py score, gold --> report[scores and gold.jsonl]
 ```
@@ -51,15 +52,16 @@ flowchart LR
 | Pilot sample | asset (`input`) | eval-pilot | built by `scripts/llm_eval.py sample` | [Assets](#assets) |
 | Blind sample | asset (`input`) | eval-blind | built by `scripts/llm_eval.py sample` | [Assets](#assets) |
 | Second-annotator sample | asset (`input`) | eval-second | built by `scripts/llm_eval.py sample` | [Assets](#assets) |
-| Adjudication input | asset (`input`) | eval-adjudication-input | built by `scripts/llm_eval.py adjudication` | [eval-adjudicate](#eval-adjudicate) |
+| The LLM's labels for the sample | asset (`input`) | eval-llm-labels | built by `scripts/llm_eval.py sample` | [Assets](#assets); read only by the adjudication |
 | Pilot labels | dataset (`textcat`) | eval_pilot | created empty | [Datasets](#datasets) |
 | Labels | dataset (`textcat`) | eval_annotations | created empty | [Datasets](#datasets) |
 | Second annotator's labels | dataset (`textcat`) | eval_second | created empty | [Datasets](#datasets) |
-| Settled labels | dataset (`textcat`) | eval_adjudication | created empty | [Datasets](#datasets) |
+| Settled labels | dataset (`review`) | eval_adjudication | created empty | [Datasets](#datasets) |
+| Adjudication recipe | package | llm_eval_recipes | template | [`recipes/llm_eval_recipes`](recipes/llm_eval_recipes) |
 | Pilot | task | eval-pilot | template | [Tasks](#eval-pilot) |
 | Annotation | task | eval-annotate | template | [Tasks](#eval-annotate) |
 | Agreement check | task | eval-second | template, optional | [Tasks](#eval-second) |
-| Adjudication | task | eval-adjudicate | template | [Tasks](#eval-adjudicate) |
+| Adjudication | task (`llm_review`) | eval-adjudicate | template | [Tasks](#eval-adjudicate) |
 | Sampling and scoring | local script | llm_eval.py | template | [`scripts/llm_eval.py`](scripts/llm_eval.py) |
 | Plan | plan | project_plan | template | [`plans/project_plan.md`](plans/project_plan.md) |
 
@@ -124,14 +126,26 @@ ellf projects create "llm-classifier-eval" "Measure an LLM classifier against pe
 ellf config project "llm-classifier-eval"
 ```
 
+### Recipes
+
+The adjudication task uses the template's own `llm_review` recipe:
+
+```bash
+ellf publish code recipes/llm_eval_recipes
+```
+
 ### Assets
 
 Build the annotation labels and the samples locally. The annotation labels are the
 classifier's labels plus UNCLEAR, and for a single label `X`, `X`, `NOT_X` and
-UNCLEAR. `sample` writes `build/blind.jsonl` (each sampled text once, with only an
-id), `build/pilot.jsonl` and `build/second.jsonl` (random subsets of it) and
-`build/key.jsonl` (the LLM's label and weight of each sampled record, which the
-scoring needs and the annotator never sees):
+UNCLEAR. `sample` writes:
+
+- `build/blind.jsonl`: each sampled text once, with only an id;
+- `build/pilot.jsonl` and `build/second.jsonl`: random subsets of it;
+- `build/llm_labels.jsonl`: each sampled text with the LLM's label, for the
+  adjudication;
+- `build/key.jsonl`: the LLM's label and weight of each sampled record, which the
+  scoring needs.
 
 ```bash
 python scripts/llm_eval.py labels assets/labels.json --out assets/annotation_labels.json
@@ -145,11 +159,11 @@ ellf publish data assets/adjudication_guidelines.md --kind instructions --name "
 ellf publish data build/pilot.jsonl --kind input --name "eval-pilot" --version 1.0.0
 ellf publish data build/blind.jsonl --kind input --name "eval-blind" --version 1.0.0
 ellf publish data build/second.jsonl --kind input --name "eval-second" --version 1.0.0
+ellf publish data build/llm_labels.jsonl --kind input --name "eval-llm-labels" --version 1.0.0
 ```
 
-Keep `build/key.jsonl`: every score is computed from it. The adjudication input is
-built from the annotations, so it's published later, in
-[eval-adjudicate](#eval-adjudicate).
+The annotation tasks only ever load the blind samples, so annotators don't see the
+LLM's labels. Keep `build/key.jsonl`: every score is computed from it.
 
 ### Datasets
 
@@ -157,18 +171,19 @@ built from the annotations, so it's published later, in
 ellf datasets create "eval_pilot" --kind textcat
 ellf datasets create "eval_annotations" --kind textcat
 ellf datasets create "eval_second" --kind textcat
-ellf datasets create "eval_adjudication" --kind textcat
+ellf datasets create "eval_adjudication" --kind review
 ```
 
 ## Tasks
 
-All four are built-in `textcat` tasks over the annotation labels.
+The first three are built-in `textcat` tasks over the annotation labels; the
+adjudication uses the template's `llm_review` recipe.
 
 | Argument | Value | Notes |
 |---|---|---|
 | `--label-scheme` | annotation-labels | your labels plus UNCLEAR |
 | `--labels-exclusive` | | drop for labels that aren't exclusive |
-| `--settings.instructions` | annotation-guidelines, or adjudication-guidelines | shown to the annotator |
+| `--settings.instructions` | annotation-guidelines | shown to the annotator |
 
 ### eval-pilot
 
@@ -227,25 +242,26 @@ need work before the LLM's figures mean much.
 
 ### eval-adjudicate
 
-Step 3: every text where the annotator and the LLM disagree, or the annotator chose
-UNCLEAR, is settled with both answers shown on the card.
-
-**Create after:** `eval-annotate` is done.
+Step 3: every text where an annotator and the LLM disagree, or an annotator chose
+UNCLEAR, is settled in Prodigy's review interface. Each answer is shown as a version
+credited to where it came from: `eval_annotations`, `eval_second` and `LLM`. The
+reviewer keeps one or picks another label, and that's the settled label. Texts
+everyone agrees on aren't shown.
 
 ```bash
-ellf datasets export eval_annotations -o build/eval_annotations.jsonl
-python scripts/llm_eval.py adjudication --key build/key.jsonl --labels assets/labels.json --annotations build/eval_annotations.jsonl --out build/adjudication_input.jsonl
-ellf publish data build/adjudication_input.jsonl --kind input --name "eval-adjudication-input" --version 1.0.0
-ellf tasks create textcat --name "eval-adjudicate" --dataset "eval_adjudication" --input "eval-adjudication-input" --label-scheme "annotation-labels" --labels-exclusive --settings.instructions "adjudication-guidelines" --no-start
+ellf tasks create llm_review --name "eval-adjudicate" --dataset "eval_adjudication" --annotations "eval_annotations" --annotations "eval_second" --llm-labels "eval-llm-labels" --settings.instructions "adjudication-guidelines" --no-start
 ```
 
 | Argument | Value | Notes |
 |---|---|---|
-| `--input` | eval-adjudication-input | the text, with the LLM's and the annotator's answers in `meta` |
+| `--annotations` | eval_annotations, eval_second | the blind labels; `eval_second` adds nothing if it's empty |
+| `--llm-labels` | eval-llm-labels | the LLM's label for each sampled text |
+| `--unclear` | UNCLEAR, the default | the annotation labels' "more than one answer" option |
 | `--settings.instructions` | adjudication-guidelines | how to settle a disagreement |
 
-Ideally someone other than the annotator adjudicates, e.g. the owner of the
-classifier.
+**Start after:** `eval-annotate` is done, and `eval-second` if you use it. The task
+picks the texts to review when it starts. Ideally someone other than the annotator
+adjudicates, e.g. the owner of the classifier.
 
 ## Scoring and the gold set
 
@@ -303,7 +319,6 @@ standard library:
 | `sample` | at setup: the stratified blind sample, its subsets, and the key |
 | `score` | after the pilot, after adjudication, and for each prompt change |
 | `agreement` | after the second annotator |
-| `adjudication` | before `eval-adjudicate`: the disagreements, with both answers |
 | `gold` | after adjudication: the gold set |
 
 ## Plans
@@ -318,4 +333,4 @@ created, replace each with a concept link to the new resource's id (the
 
 ---
 
-*Template format: 1 &middot; Ellf CLI: 21.0.8 &middot; Recipe packages: ellf-recipes 0.18.19 &middot; Written with: Claude Code 2.1.312 (claude-opus-5-5)*
+*Template format: 1 &middot; Ellf CLI: 21.0.8 &middot; Recipe packages: ellf-recipes 0.18.19, llm_eval_recipes 0.1.0 &middot; Written with: Claude Code 2.1.312 (claude-opus-5-5)*

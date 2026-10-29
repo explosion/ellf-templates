@@ -35,7 +35,7 @@
       "actions": 0,
       "agents": 0,
       "services": 0,
-      "recipes": 0,
+      "recipes": 1,
       "plans": 1
     },
     "url": "https://github.com/explosion/ellf-templates/tree/main/llm-classifier-eval",
