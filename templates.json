@@ -1,5 +1,28 @@
 [
   {
+    "name": "llm-to-jev",
+    "title": "Replacing an LLM Classifier with Jev",
+    "description": "Evaluate moving an LLM-based classifier to Jev, which answers with calibrated probabilities instead of text, and carry the move out. Compares Jev with the LLM on past records, has a person annotate a blind sample of disagreements and random records in about an hour, uses the annotations to add rules and choose per-label thresholds, and exports a configuration to run Jev in production, with optional checks for drift.",
+    "use_cases": [
+      "Text Classification",
+      "Evaluation"
+    ],
+    "counts": {
+      "tasks": 2,
+      "actions": 3,
+      "agents": 0,
+      "services": 0,
+      "recipes": 0,
+      "plans": 1
+    },
+    "url": "https://github.com/explosion/ellf-templates/tree/main/llm-to-jev",
+    "author": "Explosion",
+    "sample_data": false,
+    "api_keys": [
+      "TypeSafe"
+    ]
+  },
+  {
     "name": "helpdesk-routing",
     "title": "Helpdesk Routing with Jev",
     "description": "Find out whether Jev is good enough to route IT support tickets to the right technician by problem area. Settles the label scheme in a pilot with a Gemini second opinion, builds a human-labelled evaluation set with an agreement check and a blind slip check, scores Jev against a bar agreed in advance, and sets up daily routing with a monthly problem-area report.",
@@ -89,28 +112,5 @@
     "author": "Explosion",
     "gpu": true,
     "sample_data": true
-  },
-  {
-    "name": "llm-to-jev",
-    "title": "Replacing an LLM Classifier with Jev",
-    "description": "Evaluate moving an LLM-based classifier to Jev, which answers with calibrated probabilities instead of text, and carry the move out. Compares Jev with the LLM on past records, has a person annotate a blind sample of disagreements and random records in about an hour, uses the annotations to add rules and choose per-label thresholds, and exports a configuration to run Jev in production, with optional checks for drift.",
-    "use_cases": [
-      "Text Classification",
-      "Evaluation"
-    ],
-    "counts": {
-      "tasks": 2,
-      "actions": 3,
-      "agents": 0,
-      "services": 0,
-      "recipes": 0,
-      "plans": 1
-    },
-    "url": "https://github.com/explosion/ellf-templates/tree/main/llm-to-jev",
-    "author": "Explosion",
-    "sample_data": false,
-    "api_keys": [
-      "TypeSafe"
-    ]
   }
 ]

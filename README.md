@@ -19,6 +19,16 @@ You can also use `ellf-template` to [export](https://ellf.ai/docs/templates#crea
 
 ## Templates
 
+### [Replacing an LLM Classifier with Jev](llm-to-jev)
+
+Evaluate moving an LLM-based classifier to Jev, which answers with calibrated probabilities instead of text, and carry the move out. Compares Jev with the LLM on past records, has a person annotate a blind sample of disagreements and random records in about an hour, uses the annotations to add rules and choose per-label thresholds, and exports a configuration to run Jev in production, with optional checks for drift.
+
+**Use cases:** Text Classification, Evaluation
+
+| Tasks | Actions | Plans | API keys |
+| :---: | :---: | :---: | --- |
+| 2 | 3 | 1 | TypeSafe |
+
 ### [Helpdesk Routing with Jev](helpdesk-routing)
 
 Find out whether Jev is good enough to route IT support tickets to the right technician by problem area. Settles the label scheme in a pilot with a Gemini second opinion, builds a human-labelled evaluation set with an agreement check and a blind slip check, scores Jev against a bar agreed in advance, and sets up daily routing with a monthly problem-area report.
@@ -58,16 +68,6 @@ Train a named entity recognizer that finds food ingredients in cooking comments 
 | Tasks | Actions | Services | Plans | GPU | Sample data |
 | :---: | :---: | :---: | :---: | :---: | :---: |
 | 2 | 2 | 1 | 1 | ✓ | ✓ |
-
-### [Replacing an LLM Classifier with Jev](llm-to-jev)
-
-Evaluate moving an LLM-based classifier to Jev, which answers with calibrated probabilities instead of text, and carry the move out. Compares Jev with the LLM on past records, has a person annotate a blind sample of disagreements and random records in about an hour, uses the annotations to add rules and choose per-label thresholds, and exports a configuration to run Jev in production, with optional checks for drift.
-
-**Use cases:** Text Classification, Evaluation
-
-| Tasks | Actions | Plans | API keys |
-| :---: | :---: | :---: | --- |
-| 2 | 3 | 1 | TypeSafe |
 
 ---
 
