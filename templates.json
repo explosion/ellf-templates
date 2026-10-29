@@ -89,5 +89,28 @@
     "author": "Explosion",
     "gpu": true,
     "sample_data": true
+  },
+  {
+    "name": "llm-to-jev",
+    "title": "Replacing an LLM Classifier with Jev",
+    "description": "Replace a classifier that prompts an LLM with Jev, which answers with calibrated probabilities instead of text. Compares Jev with the LLM on past records, has a person judge a blind sample of the disagreements, writes what they show into Jev's instructions as rules, and hands the records below a confidence cut-off to people in a review task.",
+    "use_cases": [
+      "Text Classification",
+      "Evaluation"
+    ],
+    "counts": {
+      "tasks": 2,
+      "actions": 3,
+      "agents": 0,
+      "services": 0,
+      "recipes": 0,
+      "plans": 1
+    },
+    "url": "https://github.com/explosion/ellf-templates/tree/main/llm-to-jev",
+    "author": "Explosion",
+    "sample_data": false,
+    "api_keys": [
+      "TypeSafe"
+    ]
   }
 ]

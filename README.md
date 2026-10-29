@@ -59,6 +59,16 @@ Train a named entity recognizer that finds food ingredients in cooking comments 
 | :---: | :---: | :---: | :---: | :---: | :---: |
 | 2 | 2 | 1 | 1 | ✓ | ✓ |
 
+### [Replacing an LLM Classifier with Jev](llm-to-jev)
+
+Replace a classifier that prompts an LLM with Jev, which answers with calibrated probabilities instead of text. Compares Jev with the LLM on past records, has a person judge a blind sample of the disagreements, writes what they show into Jev's instructions as rules, and hands the records below a confidence cut-off to people in a review task.
+
+**Use cases:** Text Classification, Evaluation
+
+| Tasks | Actions | Plans | API keys |
+| :---: | :---: | :---: | --- |
+| 2 | 3 | 1 | TypeSafe |
+
 ---
 
 _The list is kept in sync with [`templates.json`](templates.json), the source of truth for template metadata._
