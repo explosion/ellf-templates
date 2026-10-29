@@ -31,13 +31,13 @@ Evaluate moving an LLM-based classifier to Jev, which answers with calibrated pr
 
 ### [Evaluating an LLM Classifier](llm-classifier-eval)
 
-Measure a classifier that's built on an LLM prompt against people, without changing it. An action samples its past decisions by label, people label the sample blind after a short pilot, disagreements are settled with every answer in view, and a scoring action reports accuracy and per-label precision, recall and true rates across all of its traffic, with confidence intervals, plus a gold set to re-score every prompt change against.
+Measure a classifier that's built on an LLM prompt against people, without changing it. An action runs your LLM over a random sample of its traffic and saves its answers as one more annotator, people label the same texts blind after a short pilot, the built-in review settles every disagreement, and the annotation dashboard shows how often the LLM agrees with the settled labels and which labels it confuses.
 
 **Use cases:** Evaluation, Text Classification
 
-| Tasks | Actions | Custom recipes | Plans |
-| :---: | :---: | :---: | :---: |
-| 4 | 2 | 1 | 1 |
+| Tasks | Actions | Services | Custom recipes | Plans | API keys |
+| :---: | :---: | :---: | :---: | :---: | --- |
+| 4 | 2 | 1 | 1 | 1 | Your LLM provider |
 
 ### [Helpdesk Routing with Jev](helpdesk-routing)
 

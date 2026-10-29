@@ -1,8 +1,0 @@
-__title__ = "llm_eval_recipes"
-__name__ = "llm_eval_recipes"
-__version__ = "0.2.0"
-__summary__ = "Adjudicate disagreements between an LLM classifier and people"
-__uri__ = ""
-__author__ = "Explosion"
-__email__ = ""
-__license__ = "MIT"

@@ -10,7 +10,7 @@ PWD = Path(__file__).parent
 
 
 def setup():
-    package_name = "llm_eval_recipes"
+    package_name = "llm_recipes"
     root = PWD.resolve()
 
     # Read in package meta from about.py

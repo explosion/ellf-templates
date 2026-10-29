@@ -9,15 +9,15 @@ classifier said, so judge each text on its own.
 - **Pick the label the definitions call for.** Read the label definitions shown with
   each text and choose the one that fits, as if you were the only one deciding.
 - **Use the text as shown.** It's what the classifier saw. If it doesn't give you
-  enough to decide, that's an answer too: choose the label the definitions have for
-  that case, or UNCLEAR if they have none.
-- **Choose UNCLEAR when you could defend more than one label** under the definitions
-  as written. These are useful: each one points at a definition that needs a
-  decision, and they're settled later, with the classifier's answer in view.
-- **Don't use UNCLEAR for texts you find hard but can still decide.** Pick the best
-  label instead.
-- **Skip broken texts** (empty, garbled, the wrong language for the task) with the
-  ignore button.
+  enough to decide, that's an answer too, if the definitions have a label for that
+  case.
+- **Press ignore when you could defend more than one label** under the definitions
+  as written, or the text is broken (empty, garbled, the wrong language for the
+  task). Ignored texts are settled later, with the classifier's answer in view, and
+  each one you ignore because the definitions don't settle it points at a definition
+  that needs a decision.
+- **Don't ignore texts you find hard but can still decide.** Pick the best label
+  instead.
 
 ## Noting patterns
 
