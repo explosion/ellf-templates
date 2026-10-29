@@ -1,15 +1,22 @@
 # Ellf Template: Replacing an LLM Classifier with Jev
 
 Evaluates and executes moving a classification decision from a generative LLM system
-to TypeSafe's Jev, which answers with calibrated probabilities instead of text.
-The outcome of this workflow is an optimised Jev configuration for your LLM-based classification system.
-Jev is generally 20 times cheaper to run than a generative system, and the confidence scores are
+to [TypeSafe](https://typesafe.ai)'s Jev, which answers with calibrated probabilities instead of text.
+The outcome of this workflow is an optimized Jev configuration for your LLM-based classification system.
+
+*Exported from [Ellf](https://ellf.ai) on 2026-10-28. Import it with the
+[`/ellf-template`](https://ellf.ai/docs/modules#template) skill, or set it up by hand
+with the commands below.*
+
+## How it works
+
+Jev is generally **20 times cheaper** to run than a generative system, and the confidence scores are
 helpful for many tasks. However, Jev is not always a drop-in replacement. It works differently
 so your prompt may need adjusting, or accuracy may be higher or lower.
 
 One hour of manual annotation is usually sufficient, but your task may benefit from more if you
 have a lot of categories, or if Jev and the LLM do not have high initial agreement. This workflow
-is not suitable for truly generative tasks, where the output needs to be text or images rather
+is **not suitable** for truly generative tasks, where the output needs to be text or images rather
 than classification decisions.
 
 The workflow consists of a few simple steps. First Jev is compared with the LLM on a sample of past records.
@@ -28,10 +35,6 @@ for the rarer category.
 
 Once complete the configurations can be exported from Ellf so your system can run independently in
 production. Ongoing evaluation can be conducted to detect and correct data drift.
-
-*Exported from [Ellf](https://ellf.ai) on 2026-10-28. Import it with the
-[`/ellf-template`](https://ellf.ai/docs/modules#template) skill, or set it up by hand
-with the commands below.*
 
 ## Workflow
 
@@ -84,7 +87,7 @@ flowchart LR
 | Jev instructions | config | instructions_baseline.txt, later instructions_rules.txt | user, from the current prompt | [`config/`](config) |
 | Jev configuration | config | jev_config.json | built by `scripts/jev_eval.py config` | [Export the configuration](#export-the-configuration) |
 | Scoring, sampling and export | local script | jev_eval.py | template | [`scripts/jev_eval.py`](scripts/jev_eval.py) |
-| Worked example | docs | worked_example.md | template | [`docs/worked_example.md`](docs/worked_example.md) |
+| Worked example | docs | EXAMPLE.md | template | [`EXAMPLE.md`](EXAMPLE.md) |
 | Plan | plan | project_plan | template | [`plans/project_plan.md`](plans/project_plan.md) |
 
 ## What you need to provide
@@ -128,7 +131,7 @@ flowchart LR
     record a `meta.weight` (its share of real traffic over its share of the sample),
     so the figures are weighted back to the real rate.
 
-  No data is included in this template. [docs/worked_example.md](docs/worked_example.md)
+  No data is included in this template. [EXAMPLE.md](EXAMPLE.md)
   describes a project that used it.
 
 - **Secret**: `TYPESAFE_API_KEY`, your TypeSafe API key, used by every Jev action.
