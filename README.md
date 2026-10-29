@@ -29,6 +29,16 @@ Evaluate moving an LLM-based classifier to Jev, which answers with calibrated pr
 | :---: | :---: | :---: | --- |
 | 2 | 3 | 1 | TypeSafe |
 
+### [Evaluating an LLM Classifier](llm-classifier-eval)
+
+Measure a classifier that's built on an LLM prompt against people, without changing it. A stratified random sample of its real decisions is labelled blind after a short pilot, disagreements are settled with both answers in view, and the result is accuracy and per-label precision, recall and true rates across all of its traffic, with confidence intervals, plus a gold set to re-score every prompt change against.
+
+**Use cases:** Evaluation, Text Classification
+
+| Tasks | Custom recipes | Plans |
+| :---: | :---: | :---: |
+| 4 | 1 | 1 |
+
 ### [Helpdesk Routing with Jev](helpdesk-routing)
 
 Find out whether Jev is good enough to route IT support tickets to the right technician by problem area. Settles the label scheme in a pilot with a Gemini second opinion, builds a human-labelled evaluation set with an agreement check and a blind slip check, scores Jev against a bar agreed in advance, and sets up daily routing with a monthly problem-area report.
