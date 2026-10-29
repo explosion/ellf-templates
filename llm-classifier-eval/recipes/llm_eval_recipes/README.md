@@ -1,25 +1,38 @@
 # llm_eval_recipes
 
-The custom recipe the [llm-classifier-eval](../../README.md) template adjudicates with.
+The custom recipes of the [llm-classifier-eval](../../README.md) template: two actions
+and a task that measure an LLM classifier against people.
 
-## `llm_review`
+## `llm_eval_sample` (action)
 
-A task that settles the texts where people's blind labels differ from an LLM
-classifier's. It reads the annotation datasets of the blind `textcat` tasks and an
-input asset with the LLM's label for each text (`meta.reference_label`), and serves
-every text where an annotator and the LLM disagree, or an annotator chose UNCLEAR,
-in Prodigy's review interface. Each answer is a version credited to where it came
-from: `LLM`, or the annotator's dataset, so one person's sittings count once and a
-second annotator in a dataset of their own shows separately. The reviewer's choice
-is saved to the task's dataset as a text classification example.
+Draws the evaluation sample from an input asset of the LLM's past decisions (text,
+and the LLM's raw label in `meta.reference_label`). The decisions are sampled
+separately within each label the LLM gave, with a minimum per label, and each
+sampled record carries the weight that brings it back to its share of all the
+decisions. It writes four input assets: the blind sample (texts only), a pilot and a
+second-annotator subset of it, and the sample with the LLM's labels, stratum and
+weight in `meta`.
 
-```bash
-ellf tasks create llm_review --name "eval-adjudicate" --dataset "eval_adjudication" --annotations "eval_annotations" --annotations "eval_second" --llm-labels "eval-llm-labels" --no-start
-```
+## `llm_review` (task)
 
-With one label `X`, the annotation options are `X`, `NOT_X` and UNCLEAR, and any LLM
-label other than `X` counts as `NOT_X`. The texts to review are chosen when the task
-starts, so start it once the annotation is done.
+Settles the texts where people's blind labels differ from the LLM's. It reads the
+annotation datasets and the sample with the LLM's labels, and serves every text
+where an annotator and the LLM disagree, or an annotator chose UNCLEAR, in Prodigy's
+review interface. Each answer is a version credited to `LLM` or to the annotator's
+dataset, so one person's sittings count once and a second annotator in a dataset of
+their own shows separately.
+
+## `llm_eval_score` (action)
+
+Scores the LLM against the settled labels, read straight from the datasets, and
+prints the report to its log: accuracy, per-label precision, recall and F1, and each
+label's rate as the LLM gives it against its estimated true rate, weighted to all of
+the decisions, with stratified bootstrap intervals. Optionally it adds agreement with
+a second annotator, scores other predictions on the same texts instead of the LLM's
+(e.g. a revised prompt's), and saves the gold set as an asset.
+
+With one label `X`, the annotation labels are `X`, `NOT_X` and UNCLEAR, and any LLM
+label other than `X` counts as `NOT_X`.
 
 ## Publishing
 
@@ -31,7 +44,9 @@ The version comes from `llm_eval_recipes/about.py`: bump it there for each chang
 
 ## Tests
 
-The tests need Prodigy and `ellf-recipes-sdk` installed, plus the dev requirements:
+The sampling and scoring logic is in `llm_eval_recipes/evaluation.py`, standard
+library only. The tests need Prodigy and `ellf-recipes-sdk` installed, plus the dev
+requirements:
 
 ```bash
 pip install -e . -r requirements-dev.in

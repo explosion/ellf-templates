@@ -45,9 +45,9 @@ LLM_SESSION_ID = "LLM"
             description="The datasets of the blind text classification tasks whose labels are compared with the LLM's.",
             exists=True,
         ),
-        "llm_labels": TextProps(
-            title="LLM labels",
-            description="Input data with the LLM's label for each text, in meta.reference_label: the same texts the annotators labelled.",
+        "sample": TextProps(
+            title="Sample with the LLM's labels",
+            description="The sample asset from the llm_eval_sample action, with the LLM's label for each sampled text in meta.reference_label.",
         ),
         "unclear": TextProps(
             title="Unclear label",
@@ -60,7 +60,7 @@ def llm_review(
     *,
     dataset: Dataset[Literal["review"]],
     annotations: list[InputDataset],
-    llm_labels: Input[Literal["text"]],
+    sample: Input[Literal["text"]],
     unclear: str = "UNCLEAR",
     settings: AnnotationSettings = AnnotationSettings(),
 ) -> RecipeSettingsType:
@@ -71,7 +71,7 @@ def llm_review(
             - ``annotations`` are structured datasets of choice (``textcat``)
               tasks, whose options include the LLM's labels, plus ``unclear``,
               and for one label X, ``NOT_X``.
-            - ``llm_labels`` holds the texts exactly as the annotators saw
+            - ``sample`` holds the texts exactly as the annotators saw
               them, each with ``meta.reference_label``.
 
         Raises:
@@ -100,7 +100,7 @@ def llm_review(
         )
     llm = {
         eg["text"]: eg["meta"]["reference_label"]
-        for eg in llm_labels.load(input_key="text")
+        for eg in sample.load(input_key="text")
         if "reference_label" in (eg.get("meta") or {})
     }
     by_dataset, sources = prodigy.recipes.review.get_structured_review_examples(
@@ -110,7 +110,7 @@ def llm_review(
     if not machine:
         raise RecipeError(
             "Nothing to review: no annotated text disagrees with the LLM",
-            "Check that the LLM labels asset holds the texts the annotators saw.",
+            "Check that the sample asset holds the texts the annotators saw.",
         )
     log(f"RECIPE: Reviewing {len(machine)} texts")
     # Annotators first, so on a tie their version is the default one

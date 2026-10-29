@@ -25,14 +25,14 @@
   {
     "name": "llm-classifier-eval",
     "title": "Evaluating an LLM Classifier",
-    "description": "Measure a classifier that's built on an LLM prompt against people, without changing it. A stratified random sample of its real decisions is labelled blind after a short pilot, disagreements are settled with both answers in view, and the result is accuracy and per-label precision, recall and true rates across all of its traffic, with confidence intervals, plus a gold set to re-score every prompt change against.",
+    "description": "Measure a classifier that's built on an LLM prompt against people, without changing it. An action samples its past decisions by label, people label the sample blind after a short pilot, disagreements are settled with every answer in view, and a scoring action reports accuracy and per-label precision, recall and true rates across all of its traffic, with confidence intervals, plus a gold set to re-score every prompt change against.",
     "use_cases": [
       "Evaluation",
       "Text Classification"
     ],
     "counts": {
       "tasks": 4,
-      "actions": 0,
+      "actions": 2,
       "agents": 0,
       "services": 0,
       "recipes": 1,

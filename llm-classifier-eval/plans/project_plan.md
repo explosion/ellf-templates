@@ -26,32 +26,35 @@ measurement informs.
 
 ## Approach
 
-1. **Sample.** Take the classifier's past decisions over a recent period, with its
-   raw label (before any transform downstream), and draw a stratified random sample
+1. **Sample.** The classifier's past decisions over a recent period, with its raw
+   label (before any transform downstream), are published as
+   @@Assets/eval-records@@. @@Actions/eval-sample@@ draws a stratified random sample
    by that label: each label gets its share, with a minimum so rare labels can be
    measured. Every sampled record carries a weight that brings it back to its share
    of all traffic, so the figures describe the classifier as it runs, not the
-   sample.
+   sample. The annotation tasks load only the blind texts in @@Assets/eval-blind@@;
+   the classifier's labels and the weights are in @@Assets/eval-llm-labels@@.
 2. **Pilot.** The annotator labels about 50 texts blind in @@Tasks/eval-pilot@@,
-   following @@Assets/annotation-guidelines@@. A debrief afterwards settles unclear
-   definitions before the main round; the labels go to @@Datasets/eval_pilot@@.
+   following @@Assets/annotation-guidelines@@ and choosing from
+   @@Assets/annotation-labels@@. A debrief afterwards settles unclear definitions
+   before the main round; the labels go to @@Datasets/eval_pilot@@.
 3. **Annotate.** The annotator labels the whole sample blind in
    @@Tasks/eval-annotate@@, into @@Datasets/eval_annotations@@. Optionally, a second
    annotator labels a random subset in @@Tasks/eval-second@@
    (@@Datasets/eval_second@@), for agreement: it says how much of the classifier's
    apparent error is just people disagreeing.
 4. **Adjudicate.** Every text where an annotator and the classifier disagree, or an
-   annotator chose UNCLEAR, is settled in @@Tasks/eval-adjudicate@@, which runs the
-   @@Recipes/llm_review@@ recipe: each answer is shown side by side, credited to the
-   classifier or the annotator who gave it, with @@Assets/eval-llm-labels@@ supplying
-   the classifier's. The reviewer follows @@Assets/adjudication-guidelines@@, and the
-   settled labels go to @@Datasets/eval_adjudication@@.
-5. **Score and report.** Accuracy, per-label precision and recall, and each label's
-   rate as the classifier assigns it against its estimated true rate, with 95%
-   intervals. The most common mistakes, with example texts, say what to change in
-   the prompt.
-6. **Keep the gold set.** The adjudicated sample is the regression set: rerun the
-   classifier on it after every prompt change and score the new answers against it.
+   annotator chose UNCLEAR, is settled in @@Tasks/eval-adjudicate@@: each answer is
+   shown side by side, credited to the classifier or the annotator who gave it. The
+   reviewer follows @@Assets/adjudication-guidelines@@, and the settled labels go to
+   @@Datasets/eval_adjudication@@.
+5. **Score and report.** @@Actions/eval-score@@ reports accuracy, per-label
+   precision and recall, and each label's rate as the classifier assigns it against
+   its estimated true rate, with 95% intervals. The most common mistakes, with
+   example texts, say what to change in the prompt.
+6. **Keep the gold set.** The settled sample, saved as @@Assets/eval-gold@@, is the
+   regression set: rerun the classifier on it after every prompt change and score
+   the new answers against it with the same action.
 
 ## Results
 

@@ -1,13 +1,10 @@
 import json
-import os
-import tempfile
 import uuid
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 import pytest
-from peewee import SqliteDatabase
-from prodigy.components.db import DB_TABLES, Database, disconnect, get_db, set_db
+from prodigy.components.db import Database
 from prodigy.errors import RecipeError
 from prodigy.structured_types import TextcatChoiceExample
 
@@ -18,24 +15,6 @@ TASK = "01a0ce59-26bf-7cd1-8a1b-e41bd607d240"
 ALEX = "01a0ce06-d43c-7e10-95fa-d0aaca2b8790"
 SAM = "01a0ce06-d43c-7e10-95fa-d0aaca2b8791"
 COLOURS = ["GREEN", "RED", "UNCLEAR"]
-
-
-@pytest.fixture()
-def database() -> Iterator[Database]:
-    # A file rather than an in-memory database, which Prodigy's reconnects drop
-    fd, path = tempfile.mkstemp(suffix="prodigy-test-db")
-    if get_db() is not None:
-        disconnect()
-        set_db(None)
-    sqlite = SqliteDatabase(path)
-    with sqlite.bind_ctx(DB_TABLES):
-        sqlite.create_tables(DB_TABLES)
-        db = Database(sqlite)
-        set_db(db)
-        yield db
-        disconnect()
-    os.close(fd)
-    os.remove(path)
 
 
 def _choice(text: str, accept: list[str], options: list[str]) -> TextcatChoiceExample:
@@ -66,7 +45,7 @@ def _llm_labels(tmp_path: Path, labels: dict[str, Any]) -> Input:
     return Input(
         id=uuid.uuid4(),
         cluster_id=uuid.uuid4(),
-        name="eval-llm-labels",
+        name="eval-sample",
         version="0.0.0",
         path=str(path),
         meta={"loader": "jsonl"},
@@ -79,7 +58,7 @@ def _review(names: list[str], llm: Input) -> dict[str, Any]:
         annotations=[
             InputDataset(id=uuid.uuid4(), name=n, cluster_id=uuid.uuid4()) for n in names
         ],
-        llm_labels=llm,
+        sample=llm,
     )
 
 
