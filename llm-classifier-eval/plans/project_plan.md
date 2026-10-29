@@ -26,24 +26,26 @@ measurement informs.
 
 ## Approach
 
-1. **Sample.** A random sample of the texts the classifier sees in production, with
-   the context it sees, is published as @@Assets/eval-texts@@. A random sample makes
-   the figures describe the classifier as it runs.
-2. **The LLM's answers.** @@Actions/eval-llm@@ runs the classifier over the texts and
-   saves its answers to @@Datasets/eval_llm@@, credited to the LLM, as one more
-   annotator.
-3. **Pilot.** The annotator labels 50 of the texts blind in @@Tasks/eval-pilot@@,
+1. **The LLM's answers.** The classifier's production traffic is published as
+   @@Assets/eval-records@@: its logged decisions, with the label it gave each, or a
+   random sample of texts. @@Actions/eval-llm@@ saves the classifier's answers to
+   @@Datasets/eval_llm@@, credited to the LLM, as one more annotator: read from the
+   logged labels, or by calling the classifier. From logged decisions it draws a
+   sample separately within each label, so rare labels can be measured, and records
+   each answer's weight. It writes the texts without the classifier's labels to
+   @@Assets/eval-blind@@, in random order, for people.
+2. **Pilot.** The annotator labels the first 50 texts blind in @@Tasks/eval-pilot@@,
    following @@Assets/annotation-guidelines@@, into @@Datasets/eval_pilot@@. A
    debrief afterwards settles unclear definitions before the main round.
-4. **Annotate.** The annotator labels all of the texts blind in
+3. **Annotate.** The annotator labels all of the texts blind in
    @@Tasks/eval-annotate@@, into @@Datasets/eval_annotations@@, pressing ignore where
    more than one answer is defensible. Optionally, a second annotator labels 50 in
    @@Tasks/eval-second@@ (@@Datasets/eval_second@@), for agreement: it says how much
    of the classifier's apparent error is just people disagreeing.
-5. **Review.** @@Tasks/eval-review@@ accepts the texts everyone agrees on and shows
+4. **Review.** @@Tasks/eval-review@@ accepts the texts everyone agrees on and shows
    the rest with every answer side by side, people's and the LLM's. The settled
    labels go to @@Datasets/eval_gold@@.
-6. **Compare.** @@Actions/eval-compare@@ merges the settled labels and the LLM's
+5. **Compare.** @@Actions/eval-compare@@ merges the settled labels and the LLM's
    answers into @@Datasets/eval_compare@@, and @@Services/eval-dashboard@@ shows the
    texts where they differ and which labels the LLM confuses.
 
@@ -84,7 +86,9 @@ or the data), and the prompt or guideline change proposed for it. -->
 ## Limitations
 
 - One sample of traffic; the figures may not hold if traffic changes.
-- A label the classifier rarely gives has few examples in a random sample.
+- Without sampling by label, a label the classifier rarely gives has few examples.
+- The dashboard's figures are over the sample: with sampling by label, its weights
+  are recorded but not applied.
 - The settled labels reflect one annotator, plus the review.
 
 ## Progress Log

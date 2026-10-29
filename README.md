@@ -31,7 +31,7 @@ Evaluate moving an LLM-based classifier to Jev, which answers with calibrated pr
 
 ### [Evaluating an LLM Classifier](llm-classifier-eval)
 
-Measure a classifier that's built on an LLM prompt against people, without changing it. An action runs your LLM over a random sample of its traffic and saves its answers as one more annotator, people label the same texts blind after a short pilot, the built-in review settles every disagreement, and the annotation dashboard shows how often the LLM agrees with the settled labels and which labels it confuses.
+Measure a classifier that's built on an LLM prompt against people, without changing it. An action reads its logged decisions, sampling by label, or runs it over a random sample of texts, and saves its answers as one more annotator; people label the same texts blind after a short pilot, the built-in review settles every disagreement, and the annotation dashboard shows how often it agrees with the settled labels and which labels it confuses.
 
 **Use cases:** Evaluation, Text Classification
 
