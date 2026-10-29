@@ -13,9 +13,11 @@ is not suitable for truly generative tasks, where the output needs to be text or
 than classification decisions.
 
 The workflow consists of a few simple steps. First Jev is compared with the LLM on a sample of past records.
-If the systems agree close to 100% of the time there's nothing further to do. Otherwise, a sample of
-the texts where the systems disagree is queued up for manual annotation. A random sample of texts can also
-be queued up for annotation.
+If the systems agree close to 100% of the time, you can export the configuration straight away, or first
+annotate a random sample of texts. Agreement isn't accuracy: both systems can make the same mistake, and
+the random sample tells you how accurate Jev actually is, and can still show where its prompt can be
+improved. Otherwise, a sample of the texts where the systems disagree is queued up for manual annotation,
+optionally together with a random sample.
 
 The agent can improve Jev's performance on your data based on the annotations. For instance,
 if Jev often makes the same sort of mistake and the LLM doesn't, the agent can see this from
@@ -36,11 +38,11 @@ with the commands below.*
 ```mermaid
 flowchart LR
     accTitle: Replacing an LLM classifier with Jev
-    accDescr: Past records with the LLM's labels are classified by a Jev baseline action. If Jev and the LLM nearly always agree, the configuration is exported straight away. Otherwise a script samples disagreements and random records into a blind input that a person annotates, the agent adds rules and picks thresholds from the annotations, a rules action reruns Jev, and the configuration is exported. Later, Jev is run on new records and a random sample is annotated to check for drift.
+    accDescr: Past records with the LLM's labels are classified by a Jev baseline action. If Jev and the LLM nearly always agree, the configuration can be exported straight away, or a random sample annotated first to measure accuracy. Otherwise a script samples disagreements and random records into a blind input that a person annotates, the agent adds rules and picks thresholds from the annotations, a rules action reruns Jev, and the configuration is exported. Later, Jev is run on new records and a random sample is annotated to check for drift.
     input[(llm-labelled-sample)] --> base[jev-baseline action]
     base --> baseds[(jev_baseline)]
-    baseds -- near 100% agreement --> config[config/jev_config.json]
-    baseds -- jev_eval.py sample --> blind[(adjudication-blind)]
+    baseds -. near 100% agreement .-> config[config/jev_config.json]
+    baseds -- "jev_eval.py sample (random only if near 100%)" --> blind[(adjudication-blind)]
     blind --> adj[adjudicate task]
     adj --> adjds[(adjudication)]
     adjds -. rules .-> rules[jev-rules action]
@@ -144,9 +146,10 @@ flowchart LR
   `sample` defaults are 150 disagreements, spread evenly over the kinds of
   disagreement, and 50 random records. Use fewer for long texts, and more for many
   labels or low agreement.
-- **Random sample**: the random records give an unbiased accuracy for both systems
-  and let the threshold estimate check agreements too. Set `--random 0` to annotate
-  only disagreements; the estimate then takes every agreement as correct.
+- **Random sample**: the random records give an unbiased accuracy for both systems,
+  catch mistakes the two make together, and let the threshold estimate check
+  agreements too. With high agreement it's the whole review. Set `--random 0` to
+  annotate only disagreements; the estimate then takes every agreement as correct.
 - **Jev model**: the actions use `jev-latest`. The exported configuration pins the
   version the run actually used; pass `--model` to the actions to keep runs
   comparable.
@@ -225,10 +228,18 @@ ellf datasets export jev_baseline -o jev_baseline.jsonl
 python scripts/jev_eval.py agreement jev_baseline.jsonl
 ```
 
-If Jev and the LLM agree close to 100% of the time, and the disagreements it lists
-are ones neither answer is clearly wrong on, there's nothing further to do: go
-straight to [Export the configuration](#export-the-configuration) with the baseline
-run and instructions. Otherwise, annotate in [adjudicate](#adjudicate).
+What comes next depends on the agreement:
+
+- **Close to 100%**, and the disagreements it lists are ones neither answer is
+  clearly wrong on: Jev can take over as is. Either go straight to
+  [Export the configuration](#export-the-configuration) with the baseline run and
+  instructions, or first review a random sample in [adjudicate](#adjudicate). High
+  agreement only says Jev does what the LLM does: the review measures how accurate
+  both actually are, catches mistakes they make together, and often still turns up a
+  definition worth tightening in Jev's instructions. It's also what the thresholds
+  are chosen from.
+- **Lower**: annotate the disagreements, with a random sample, in
+  [adjudicate](#adjudicate).
 
 ### jev-rules
 
@@ -299,6 +310,18 @@ and the key records which texts were drawn at random:
 
 ```bash
 python scripts/jev_eval.py sample jev_baseline.jsonl --out adjudication-blind.jsonl --key adjudication-key.jsonl --disagreements 150 --random 50
+```
+
+With agreement close to 100%, make the review mostly random instead. There are only
+a few disagreements then, and `sample` takes all of them within the budget:
+
+```bash
+python scripts/jev_eval.py sample jev_baseline.jsonl --out adjudication-blind.jsonl --key adjudication-key.jsonl --disagreements 20 --random 180
+```
+
+Then publish the sample and create the task:
+
+```bash
 ellf publish data adjudication-blind.jsonl --kind input --name "adjudication-blind" --version 1.0.0
 ellf tasks create textcat --name "adjudicate" --dataset "adjudication" --input "adjudication-blind" --label-scheme "annotation-labels" --labels-exclusive --settings.instructions "annotation-guidelines" --no-start
 ```
@@ -318,6 +341,11 @@ python scripts/jev_eval.py adjudicated adjudication.jsonl baseline=jev_baseline.
 
 Keep `adjudication-key.jsonl` next to the exports: the scoring needs it to tell the
 random records from the disagreements.
+
+The accuracy on the random sample is the headline figure. If `--show` turns up a
+pattern in Jev's mistakes, or in mistakes both systems make, write rules and run
+[jev-rules](#jev-rules); if not, go on to
+[Export the configuration](#export-the-configuration) with the baseline run.
 
 ### check-annotate
 

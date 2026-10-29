@@ -36,10 +36,14 @@ choose a definition and write it down, rather than counting either system as wro
 1. **Baseline.** @@Actions/jev-baseline@@ runs Jev over past records that carry the
    LLM's label, with the same label definitions and a short description of the
    setting, into @@Datasets/jev_baseline@@. We measure agreement and Cohen's κ. If
-   they agree close to 100% of the time, we skip to step 4.
+   they agree close to 100% of the time, Jev can take over as is: we either go
+   straight to step 4, or review a random sample in step 2 first. High agreement
+   only says Jev does what the LLM does; the review measures how accurate both are,
+   catches mistakes they make together, and can still show where Jev's instructions
+   can be tightened.
 2. **Annotate.** One annotator labels a blind sample in @@Tasks/adjudicate@@: the
    disagreements, spread over each kind (e.g. "LLM says X, Jev says Y"), plus a random
-   sample. They choose among @@Assets/annotation-labels@@, which add UNCLEAR ("I could
+   sample; with near-total agreement, mostly the random sample. They choose among @@Assets/annotation-labels@@, which add UNCLEAR ("I could
    defend more than one answer"), following @@Assets/annotation-guidelines@@, and
    aren't shown either system's answer. About an hour, around 200 short texts; more
    for many labels or low agreement. The labels go to @@Datasets/adjudication@@.
@@ -112,6 +116,10 @@ label's threshold with the estimated accuracy, precision and recall at it. -->
   only where the systems disagree, plus a random sample. _Rationale: the question is
   whether Jev can take over the LLM's job, and gold sets mainly show that category
   definitions are vague._
+- **Agreement isn't accuracy**: even when Jev and the LLM nearly always agree, a
+  random sample is worth reviewing before export. _Rationale: both can make the same
+  mistake, the accuracy is what the thresholds are chosen from, and the review can
+  still improve Jev's instructions._
 - **Annotation is economical**: about an hour, and training data only if a
   systematic Jev failure shows up that instructions can't fix. _Rationale: Jev only
   has to match or beat the LLM, and choosing thresholds needs far fewer labels than
