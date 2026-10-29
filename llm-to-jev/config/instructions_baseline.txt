@@ -1,0 +1,1 @@
+[Replace this with one or two sentences describing the setting, taken from your current LLM prompt, e.g. "This is a customer's message to a support team." For a classifier with one label, also define it, e.g. "URGENT means the customer can't use the product at all or is about to cancel."]
