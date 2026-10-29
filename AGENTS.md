@@ -18,7 +18,7 @@ A JSON list with one object per template, in the same order as the README, with 
 | `title` | Title Case, from the README's `# Ellf Template: <title>` heading. |
 | `description` | Two or three sentences: what the project does, then what the workflow covers. Plain text, no markdown. |
 | `use_cases` | Reuse existing values where they fit: `Information Extraction`, `Named Entity Recognition`, `Text Classification`, `Relation Extraction`, `LLM Distillation`, `PDF Processing`, `Evaluation`, `Getting Started` (for simple templates to start with, listed first). |
-| `counts` | `tasks`, `actions`, `agents`, `services`: the number of sections under the README's Tasks, Actions, Agents and Services headings. `recipes`: custom recipe packages in `recipes/` (built-in recipes don't count). `plans`: the files in `plans/`. Include every key, with `0` where there are none. |
+| `counts` | `tasks`, `actions`, `agents`, `services`: the number of sections under the README's Tasks, Actions, Agents and Services headings. `recipes`: the custom recipes in `recipes/`, i.e. the functions decorated with a recipe decorator such as `@task_recipe` or `@action_recipe`, not the number of packages (built-in recipes don't count). `plans`: the files in `plans/`. Include every key, with `0` where there are none. |
 | `url` | `https://github.com/explosion/ellf-templates/tree/main/<name>` |
 | `author` | Who made it, e.g. `Explosion`. Leave it out if unknown. |
 | `gpu` | `true` if a job in the template can run on a GPU worker, e.g. transformer training with `--worker-class gpu`. Leave it out otherwise. |
