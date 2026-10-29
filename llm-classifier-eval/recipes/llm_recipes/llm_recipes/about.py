@@ -1,0 +1,8 @@
+__title__ = "llm_recipes"
+__name__ = "llm_recipes"
+__version__ = "0.3.0"
+__summary__ = "Run an LLM classifier over texts and save its answers as annotations"
+__uri__ = ""
+__author__ = "Explosion"
+__email__ = ""
+__license__ = "MIT"

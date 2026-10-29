@@ -1,0 +1,13 @@
+.mypy_cache
+env3.*
+.env/*
+**/__pycache__
+.vscode
+
+build
+dist
+*.egg-info
+.pytest_cache
+
+.coverage
+llm_eval_recipes/meta.json
