@@ -45,9 +45,11 @@ by one sentence in the instructions:
 Each rule moved only the records it covered, and moved them to high confidence;
 records it didn't cover hardly changed. No training data was needed for any of them.
 
-**Cut-off.** 0.7 worked for all three, sending a small share of records to a person.
-Raising it to 0.9 sent several times as many, mostly to confirm labels that already
-looked right.
+**Thresholds.** A confidence cut-off of 0.7 worked for all three, with a small share
+of records below it handed to a fallback. Raising it to 0.9 sent several times as
+many, mostly ones whose labels already looked right. For the rare NEGATIVE label,
+the probability needed to apply it is worth tuning on its own: just above 0.5 is
+where Jev's curt-reply mistakes sat.
 
 ## Things to watch for
 

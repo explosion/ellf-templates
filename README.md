@@ -61,7 +61,7 @@ Train a named entity recognizer that finds food ingredients in cooking comments 
 
 ### [Replacing an LLM Classifier with Jev](llm-to-jev)
 
-Replace a classifier that prompts an LLM with Jev, which answers with calibrated probabilities instead of text. Compares Jev with the LLM on past records, has a person judge a blind sample of the disagreements, writes what they show into Jev's instructions as rules, and hands the records below a confidence cut-off to people in a review task.
+Evaluate moving an LLM-based classifier to Jev, which answers with calibrated probabilities instead of text, and carry the move out. Compares Jev with the LLM on past records, has a person annotate a blind sample of disagreements and random records in about an hour, uses the annotations to add rules and choose per-label thresholds, and exports a configuration to run Jev in production, with optional checks for drift.
 
 **Use cases:** Text Classification, Evaluation
 

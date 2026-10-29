@@ -1,9 +1,9 @@
-# Judging disagreements
+# Annotating for a classifier comparison
 
-You're helping decide whether a new classifier can replace the current one. Most of
-the texts you'll see are ones where the two systems disagree, and a few are ones where
-they agree but one of them was unsure. You won't be told which system said what, or
-which kind of record you're looking at, so judge each text on its own.
+You're helping decide how well a new classifier does compared with the current one.
+Some of the texts you'll see are ones where the two systems disagree, and some are
+drawn at random. You won't be told which system said what, or why a text was picked,
+so judge each text on its own.
 
 ## How to answer
 

@@ -1,12 +1,31 @@
 # Ellf Template: Replacing an LLM Classifier with Jev
 
-Moves a classification decision that's currently made by prompting an LLM over to
-TypeSafe's Jev, which answers with calibrated probabilities instead of text. Jev is
-compared with the LLM on a sample of past records. A person then judges a blind
-sample of the disagreements, and what they show is written into Jev's instructions
-as rules. You end up with a Jev configuration and a confidence cut-off, plus an
-annotation task where people label only the records Jev isn't confident about. No
-annotated training data is needed.
+Evaluates and executes moving a classification decision from a generative LLM system
+to TypeSafe's Jev, which answers with calibrated probabilities instead of text.
+The outcome of this workflow is an optimised Jev configuration for your LLM-based classification system.
+Jev is generally 20 times cheaper to run than a generative system, and the confidence scores are
+helpful for many tasks. However, Jev is not always a drop-in replacement. It works differently
+so your prompt may need adjusting, or accuracy may be higher or lower.
+
+One hour of manual annotation is usually sufficient, but your task may benefit from more if you
+have a lot of categories, or if Jev and the LLM do not have high initial agreement. This workflow
+is not suitable for truly generative tasks, where the output needs to be text or images rather
+than classification decisions.
+
+The workflow consists of a few simple steps. First Jev is compared with the LLM on a sample of past records.
+If the systems agree close to 100% of the time there's nothing further to do. Otherwise, a sample of
+the texts where the systems disagree is queued up for manual annotation. A random sample of texts can also
+be queued up for annotation.
+
+The agent can improve Jev's performance on your data based on the annotations. For instance,
+if Jev often makes the same sort of mistake and the LLM doesn't, the agent can see this from
+the annotations and add a rule that fixes the problem. The agent can also use the annotations
+to choose a confidence threshold that performs well on your problem. For instance, if you have
+two categories, you might find that accuracy is best if you set a confidence cutoff of 0.8
+for the rarer category.
+
+Once complete the configurations can be exported from Ellf so your system can run independently in
+production. Ongoing evaluation can be conducted to detect and correct data drift.
 
 *Exported from [Ellf](https://ellf.ai) on 2026-10-28. Import it with the
 [`/ellf-template`](https://ellf.ai/docs/modules#template) skill, or set it up by hand
@@ -17,21 +36,24 @@ with the commands below.*
 ```mermaid
 flowchart LR
     accTitle: Replacing an LLM classifier with Jev
-    accDescr: Past records with the LLM's labels are classified by a Jev baseline action. A script samples the disagreements into a blind input that a person judges. Rules from the judging go into a second Jev action. Once a cut-off is chosen, a Jev action saves its confident answers and a review task shows people the rest.
+    accDescr: Past records with the LLM's labels are classified by a Jev baseline action. If Jev and the LLM nearly always agree, the configuration is exported straight away. Otherwise a script samples disagreements and random records into a blind input that a person annotates, the agent adds rules and picks thresholds from the annotations, a rules action reruns Jev, and the configuration is exported. Later, Jev is run on new records and a random sample is annotated to check for drift.
     input[(llm-labelled-sample)] --> base[jev-baseline action]
     base --> baseds[(jev_baseline)]
+    baseds -- near 100% agreement --> config[config/jev_config.json]
     baseds -- jev_eval.py sample --> blind[(adjudication-blind)]
     blind --> adj[adjudicate task]
     adj --> adjds[(adjudication)]
     adjds -. rules .-> rules[jev-rules action]
     input --> rules
     rules --> rulesds[(jev_rules)]
-    rulesds -. cut-off .-> conf[jev-confident action]
-    input --> conf
-    conf --> confds[(jev_confident)]
-    input --> review[review task]
-    confds -. excluded .-> review
-    review --> reviewds[(review)]
+    adjds -. thresholds .-> config
+    rulesds --> config
+    config -. later .-> check[jev-check action]
+    new[(new-records)] --> check
+    check --> checkds[(jev_check)]
+    checkds -- jev_eval.py sample --> cblind[(check-blind)]
+    cblind --> cann[check-annotate task]
+    cann --> cannds[(check_annotations)]
 ```
 
 ## Overview
@@ -42,22 +64,24 @@ flowchart LR
 | TypeSafe key | secret | TYPESAFE_API_KEY | user | [What you need to provide](#what-you-need-to-provide) |
 | Past records with LLM labels | asset (`input`) | llm-labelled-sample | user | [format](#what-you-need-to-provide) |
 | Label scheme | asset (`labels`) | classifier-labels | user, from the current prompt | `assets/labels.json`, [format](#what-you-need-to-provide) |
-| Adjudication labels | asset (`labels`) | adjudication-labels | derived from the label scheme | `assets/adjudication_labels.json`, [Assets](#assets) |
-| Adjudication guidelines | asset (`instructions`) | adjudication-guidelines | template | [assets/adjudication_guidelines.md](assets/adjudication_guidelines.md) |
-| Review guidelines | asset (`instructions`) | review-guidelines | template, rules added later | [assets/review_guidelines.md](assets/review_guidelines.md) |
-| Blind adjudication sample | asset (`input`) | adjudication-blind | built by `scripts/jev_eval.py sample` | [adjudicate](#adjudicate) |
+| Annotation labels | asset (`labels`) | annotation-labels | derived from the label scheme | `assets/annotation_labels.json`, [Assets](#assets) |
+| Annotation guidelines | asset (`instructions`) | annotation-guidelines | template | [assets/annotation_guidelines.md](assets/annotation_guidelines.md) |
+| Blind annotation sample | asset (`input`) | adjudication-blind | built by `scripts/jev_eval.py sample` | [adjudicate](#adjudicate) |
+| New records to check | asset (`input`) | new-records | user, later | [jev-check](#jev-check) |
+| Blind check sample | asset (`input`) | check-blind | built by `scripts/jev_eval.py sample` | [check-annotate](#check-annotate) |
 | Jev's baseline answers | dataset (`textcat`) | jev_baseline | created empty | [Datasets](#datasets) |
 | Jev's answers with rules | dataset (`textcat`) | jev_rules | created empty | [Datasets](#datasets) |
-| Adjudications | dataset (`textcat`) | adjudication | created empty | [Datasets](#datasets) |
-| Jev's confident answers | dataset (`textcat`) | jev_confident | created empty | [Datasets](#datasets) |
-| Reviewed records | dataset (`textcat`) | review | created empty | [Datasets](#datasets) |
+| Annotations | dataset (`textcat`) | adjudication | created empty | [Datasets](#datasets) |
+| Jev's answers on new records | dataset (`textcat`) | jev_check | created empty | [Datasets](#datasets) |
+| Check annotations | dataset (`textcat`) | check_annotations | created empty | [Datasets](#datasets) |
 | Baseline run | action | jev-baseline | template | [Actions](#jev-baseline) |
 | Run with rules | action | jev-rules | template | [Actions](#jev-rules) |
-| Confident answers | action | jev-confident | template | [Actions](#jev-confident) |
-| Adjudication | task | adjudicate | template | [Tasks](#adjudicate) |
-| Review below the cut-off | task | review | template | [Tasks](#review) |
+| Drift check | action | jev-check | template, optional | [Actions](#jev-check) |
+| Annotation | task | adjudicate | template | [Tasks](#adjudicate) |
+| Check annotation | task | check-annotate | template, optional | [Tasks](#check-annotate) |
 | Jev instructions | config | instructions_baseline.txt, later instructions_rules.txt | user, from the current prompt | [`config/`](config) |
-| Scoring and sampling | local script | jev_eval.py | template | [`scripts/jev_eval.py`](scripts/jev_eval.py) |
+| Jev configuration | config | jev_config.json | built by `scripts/jev_eval.py config` | [Export the configuration](#export-the-configuration) |
+| Scoring, sampling and export | local script | jev_eval.py | template | [`scripts/jev_eval.py`](scripts/jev_eval.py) |
 | Worked example | docs | worked_example.md | template | [`docs/worked_example.md`](docs/worked_example.md) |
 | Plan | plan | project_plan | template | [`plans/project_plan.md`](plans/project_plan.md) |
 
@@ -83,7 +107,7 @@ flowchart LR
   - **Instructions** (`config/instructions_baseline.txt`): one or two sentences
     describing the setting, plus the definition for a single label. Replace the
     placeholder text. Leave out output-format instructions and examples meant to
-    make the LLM parseable; Jev doesn't need them.
+    make the LLM's reply parseable; Jev doesn't need them.
 
 - **Past records with the LLM's labels** (llm-labelled-sample): JSONL, one record
   per line, with the text in `text` and the LLM's label in `meta.reference_label`. A
@@ -100,7 +124,7 @@ flowchart LR
   - **Several non-exclusive labels**: `reference_label` is a list.
   - **A rare label**: include more of it than real traffic has, and give every
     record a `meta.weight` (its share of real traffic over its share of the sample),
-    so agreement figures are weighted back to the real rate.
+    so the figures are weighted back to the real rate.
 
   No data is included in this template. [docs/worked_example.md](docs/worked_example.md)
   describes a project that used it.
@@ -113,21 +137,19 @@ flowchart LR
 ## Customize
 
 - **Labels and exclusivity**: commands use `--labels-exclusive`, for a choice between
-  several labels. Drop it from every action and the review task when a text can have
-  several labels. For one label it makes no difference.
-- **Jev model**: the actions use `jev-latest`. Pin a version with `--model` to keep
-  the baseline and rules runs comparable.
-- **Adjudication sample size**: `jev_eval.py sample` takes 6 records per kind of
-  disagreement and 10 low-confidence agreements by default (`--per-pair`,
-  `--low-confidence`, `--low-below`). A one-label classifier has only two kinds of
-  disagreement, so take 20 or more of each.
-- **Cut-off**: 0.7 in `jev-confident` is a starting point; choose yours from the
-  rules run (see [jev-confident](#jev-confident)).
-- **Review input**: `jev-confident` and `review` read llm-labelled-sample, which
-  shows the workflow end to end. For real use, publish new records as another input
-  asset and point both at it.
-- **Annotation guidelines**: `assets/adjudication_guidelines.md` is general and works
-  as is. Add domain notes if annotators need them, e.g. jargon.
+  several labels. Drop it from every job, and leave out `--exclusive` when exporting
+  the configuration, when a text can have several labels. For one label it makes no
+  difference.
+- **Annotation budget**: one hour is usually enough, about 200 short texts. The
+  `sample` defaults are 150 disagreements, spread evenly over the kinds of
+  disagreement, and 50 random records. Use fewer for long texts, and more for many
+  labels or low agreement.
+- **Random sample**: the random records give an unbiased accuracy for both systems
+  and let the threshold estimate check agreements too. Set `--random 0` to annotate
+  only disagreements; the estimate then takes every agreement as correct.
+- **Jev model**: the actions use `jev-latest`. The exported configuration pins the
+  version the run actually used; pass `--model` to the actions to keep runs
+  comparable.
 
 ## Setup
 
@@ -137,28 +159,29 @@ path.
 ### Project
 
 ```bash
-ellf projects create "llm-to-jev" "Evaluate Jev as a calibrated replacement for an LLM classifier, and hand uncertain records to people."
+ellf projects create "llm-to-jev" "Evaluate and tune Jev as a replacement for an LLM classifier, and export the configuration to run it in production."
 ellf config project "llm-to-jev"
 ```
 
 ### Assets
 
-The adjudication label scheme is the classifier's labels plus UNCLEAR, and for a
+The annotation label scheme is the classifier's labels plus UNCLEAR, and for a
 single label `X`, `X`, `NOT_X` and UNCLEAR. Write it by hand, or with the script:
 
 ```bash
-python scripts/jev_eval.py labels assets/labels.json --out assets/adjudication_labels.json
+python scripts/jev_eval.py labels assets/labels.json --out assets/annotation_labels.json
 ```
 
 ```bash
 ellf publish data <your records>.jsonl --kind input --name "llm-labelled-sample" --version 1.0.0
 ellf publish data assets/labels.json --kind labels --name "classifier-labels" --version 1.0.0
-ellf publish data assets/adjudication_labels.json --kind labels --name "adjudication-labels" --version 1.0.0
-ellf publish data assets/adjudication_guidelines.md --kind instructions --name "adjudication-guidelines" --version 1.0.0
+ellf publish data assets/annotation_labels.json --kind labels --name "annotation-labels" --version 1.0.0
+ellf publish data assets/annotation_guidelines.md --kind instructions --name "annotation-guidelines" --version 1.0.0
 ```
 
-The blind sample and the review guidelines depend on results, so they're published
-later, in the [adjudicate](#adjudicate) and [review](#review) sections.
+The blind samples are built from Jev's runs, and the new records come later, so
+they're published in the [adjudicate](#adjudicate), [jev-check](#jev-check) and
+[check-annotate](#check-annotate) sections.
 
 ### Datasets
 
@@ -169,45 +192,55 @@ annotations to its own. `scripts/jev_eval.py` reads the exports.
 ellf datasets create "jev_baseline" --kind textcat
 ellf datasets create "jev_rules" --kind textcat
 ellf datasets create "adjudication" --kind textcat
-ellf datasets create "jev_confident" --kind textcat
-ellf datasets create "review" --kind textcat
+ellf datasets create "jev_check" --kind textcat
+ellf datasets create "check_annotations" --kind textcat
 ```
 
 ## Actions
 
-All three use the built-in `textcat_jev` recipe and the `TYPESAFE_API_KEY` secret.
+All three use the built-in `textcat_jev` recipe and the `TYPESAFE_API_KEY` secret,
+and save every answer (`--min-confidence 0.0`) so it can be scored.
 
 | Argument | Value | Notes |
 |---|---|---|
-| `--input` | llm-labelled-sample | your records |
+| `--input` | llm-labelled-sample, or new-records | your records |
 | `--api-key` | TYPESAFE_API_KEY | secret name |
 | `--label-scheme` | classifier-labels | from your prompt |
 | `--labels-exclusive` | | drop for non-exclusive labels |
 | `--instructions` | `config/instructions_*.txt` | the setting, definitions and rules |
-| `--min-confidence` | 0.0, or the cut-off | which answers are saved |
+| `--output` | the run's dataset | exported for `jev_eval.py` |
 
 ### jev-baseline
 
-Step 1: Jev answers every record with the same definitions as the LLM, and every
-answer is saved so it can be compared.
+Step 1: Jev answers every record with the same definitions as the LLM.
 
 ```bash
 ellf actions create textcat_jev --name "jev-baseline" --api-key TYPESAFE_API_KEY --input "llm-labelled-sample" --instructions "$(cat config/instructions_baseline.txt)" --label-scheme "classifier-labels" --labels-exclusive --min-confidence 0.0 --output "jev_baseline" --no-start
 ```
 
-Once it has run, score it:
+Once it has run, compare it with the LLM:
 
 ```bash
 ellf datasets export jev_baseline -o jev_baseline.jsonl
 python scripts/jev_eval.py agreement jev_baseline.jsonl
 ```
 
+If Jev and the LLM agree close to 100% of the time, and the disagreements it lists
+are ones neither answer is clearly wrong on, there's nothing further to do: go
+straight to [Export the configuration](#export-the-configuration) with the baseline
+run and instructions. Otherwise, annotate in [adjudicate](#adjudicate).
+
 ### jev-rules
 
-Step 3: the same run, with rules from the adjudication added to the instructions.
+Step 3: Jev again, with the instructions changed in light of the annotations.
 
-**Create after:** `adjudicate` has been annotated and scored, and the rules are
-written. Instructions are fixed when an action is created, so write them first:
+**Create after:** `adjudicate` has been annotated and scored, and the new
+instructions are written. Instructions are fixed when an action is created, so write
+them first. `jev_eval.py adjudicated --show` prints the texts where Jev is wrong and
+the LLM right, where both are wrong, and those marked UNCLEAR. Where Jev keeps making
+the same kind of mistake, add one sentence that settles it; where the definitions
+themselves are unclear, decide them and say so. The annotation guidelines ask the
+annotator to note patterns too.
 
 ```bash
 cp config/instructions_baseline.txt config/instructions_rules.txt
@@ -215,97 +248,151 @@ cp config/instructions_baseline.txt config/instructions_rules.txt
 ellf actions create textcat_jev --name "jev-rules" --api-key TYPESAFE_API_KEY --input "llm-labelled-sample" --instructions "$(cat config/instructions_rules.txt)" --label-scheme "classifier-labels" --labels-exclusive --min-confidence 0.0 --output "jev_rules" --no-start
 ```
 
-For another round of rules, create a new action (e.g. `jev-rules-2`) with its own
-output dataset, so each round can be compared.
-
-### jev-confident
-
-Step 5: saves only the answers at or above the cut-off. The [review](#review) task
-excludes them, so people see only the rest.
-
-**Create after:** the cut-off is chosen. Pick it from the rules run's `agreement`
-output, by reading the disagreements just above each candidate value:
+Score it against the annotations, and with the baseline for comparison:
 
 ```bash
 ellf datasets export jev_rules -o jev_rules.jsonl
-python scripts/jev_eval.py agreement jev_rules.jsonl --cutoffs 0.6,0.7,0.8,0.9
+python scripts/jev_eval.py adjudicated adjudication.jsonl baseline=jev_baseline.jsonl rules=jev_rules.jsonl --key adjudication-key.jsonl --show 10
 ```
 
+Rules are written from the annotated records, so their scores on those records are
+optimistic; the random sample's figures are the fairer check. For another round,
+create a new action (e.g. `jev-rules-2`) with its own output dataset.
+
+### jev-check
+
+Ongoing evaluation, optional and repeated, e.g. monthly: Jev with the exported
+configuration on recent records, to catch drift.
+
+**Create after:** the configuration is exported, and new records are published. Use
+recent production records. If the LLM still runs alongside, include its label as
+`meta.reference_label` so `agreement` works too; otherwise the check relies on the
+random sample. Name each round's resources for it, e.g. `new-records-2026-11`.
+
 ```bash
-ellf actions create textcat_jev --name "jev-confident" --api-key TYPESAFE_API_KEY --input "llm-labelled-sample" --instructions "$(cat config/instructions_rules.txt)" --label-scheme "classifier-labels" --labels-exclusive --min-confidence 0.7 --output "jev_confident" --no-start
+ellf publish data <recent records>.jsonl --kind input --name "new-records" --version 1.0.0
+ellf actions create textcat_jev --name "jev-check" --api-key TYPESAFE_API_KEY --input "new-records" --instructions "$(cat config/instructions_rules.txt)" --label-scheme "classifier-labels" --labels-exclusive --min-confidence 0.0 --output "jev_check" --no-start
 ```
 
 | Argument | Value | Notes |
 |---|---|---|
-| `--min-confidence` | 0.7 | your cut-off |
-| `--input` | llm-labelled-sample | swap in new records for real use; use the same input in `review` |
+| `--instructions` | `config/instructions_rules.txt` | the instructions in the exported configuration, `instructions_baseline.txt` if no rules were needed |
+
+Once it has run, compare its labels and confidence with the run the configuration
+came from. A shift in either is a reason to annotate a check sample:
+
+```bash
+ellf datasets export jev_check -o jev_check.jsonl
+python scripts/jev_eval.py drift jev_rules.jsonl jev_check.jsonl
+```
 
 ## Tasks
 
 ### adjudicate
 
-Step 2: one annotator judges a blind sample of the baseline's disagreements, plus
-some agreements where Jev was unsure, without seeing either system's answer.
+Step 2: one annotator labels a blind sample of the baseline's disagreements and
+random records, without seeing either system's answer. These annotations drive the
+rules and thresholds.
 
-**Create after:** `jev-baseline` has run. The blind sample is built from its output:
+**Create after:** `jev-baseline` has run. The blind sample is built from its output,
+and the key records which texts were drawn at random:
 
 ```bash
-ellf datasets export jev_baseline -o jev_baseline.jsonl
-python scripts/jev_eval.py sample jev_baseline.jsonl --out adjudication-blind.jsonl
+python scripts/jev_eval.py sample jev_baseline.jsonl --out adjudication-blind.jsonl --key adjudication-key.jsonl --disagreements 150 --random 50
 ellf publish data adjudication-blind.jsonl --kind input --name "adjudication-blind" --version 1.0.0
-ellf tasks create textcat --name "adjudicate" --dataset "adjudication" --input "adjudication-blind" --label-scheme "adjudication-labels" --labels-exclusive --settings.instructions "adjudication-guidelines" --no-start
+ellf tasks create textcat --name "adjudicate" --dataset "adjudication" --input "adjudication-blind" --label-scheme "annotation-labels" --labels-exclusive --settings.instructions "annotation-guidelines" --no-start
 ```
 
 | Argument | Value | Notes |
 |---|---|---|
 | `--input` | adjudication-blind | text and id only |
-| `--label-scheme` | adjudication-labels | your labels plus UNCLEAR |
-| `--settings.instructions` | adjudication-guidelines | how to judge and when to use UNCLEAR |
+| `--label-scheme` | annotation-labels | your labels plus UNCLEAR |
+| `--settings.instructions` | annotation-guidelines | how to judge and when to use UNCLEAR |
 
-Once it's annotated, score the runs against it. Add `rules=jev_rules.jsonl` after
-the rules run:
+Once it's annotated, score the baseline:
 
 ```bash
 ellf datasets export adjudication -o adjudication.jsonl
-python scripts/jev_eval.py adjudicated adjudication.jsonl baseline=jev_baseline.jsonl
+python scripts/jev_eval.py adjudicated adjudication.jsonl baseline=jev_baseline.jsonl --key adjudication-key.jsonl --show 10
 ```
 
-The UNCLEAR answers and the patterns the annotator noted are where the rules come
-from. [docs/worked_example.md](docs/worked_example.md) shows what such rules look
-like.
+Keep `adjudication-key.jsonl` next to the exports: the scoring needs it to tell the
+random records from the disagreements.
 
-### review
+### check-annotate
 
-Step 5: people label the records Jev wasn't confident about, following the label
-definitions and the rules.
+Ongoing evaluation, optional: a random sample of the new records, annotated the
+same way, for Jev's current accuracy.
 
-**Create after:** `jev-confident` has run. Copy the rules into the guidelines first:
+**Create after:** `jev-check` has run.
 
 ```bash
-# copy the rules from config/instructions_rules.txt into assets/review_guidelines.md
-ellf publish data assets/review_guidelines.md --kind instructions --name "review-guidelines" --version 1.0.0
-ellf tasks create textcat --name "review" --dataset "review" --input "llm-labelled-sample" --label-scheme "classifier-labels" --labels-exclusive --settings.exclude jev_confident --settings.instructions "review-guidelines" --no-start
+python scripts/jev_eval.py sample jev_check.jsonl --out check-blind.jsonl --key check-key.jsonl --disagreements 50 --random 50
+ellf publish data check-blind.jsonl --kind input --name "check-blind" --version 1.0.0
+ellf tasks create textcat --name "check-annotate" --dataset "check_annotations" --input "check-blind" --label-scheme "annotation-labels" --labels-exclusive --settings.instructions "annotation-guidelines" --no-start
+```
+
+Without LLM labels on the new records there are no disagreements to sample, so the
+whole sample is random. Once it's annotated:
+
+```bash
+ellf datasets export check_annotations -o check_annotations.jsonl
+python scripts/jev_eval.py adjudicated check_annotations.jsonl check=jev_check.jsonl --key check-key.jsonl --show 10
+python scripts/jev_eval.py thresholds check_annotations.jsonl jev_check.jsonl --key check-key.jsonl
+```
+
+If accuracy has dropped, or the thresholds no longer fit, start another round of
+rules from these annotations and export the configuration again.
+
+## Export the configuration
+
+Step 4: choose the thresholds from the annotations, then write the configuration
+your system runs Jev with.
+
+```bash
+python scripts/jev_eval.py thresholds adjudication.jsonl jev_rules.jsonl --key adjudication-key.jsonl
+```
+
+For a label that's applied on its own (one label, or several that aren't exclusive),
+it estimates accuracy, precision and recall at each probability threshold: pick the
+threshold that suits the cost of each kind of mistake. For a choice between labels,
+it gives each label's precision above each confidence cut-off: give a label a
+threshold where your system should fall back to something else (the LLM, a default,
+or a person) below it. The estimate weights each annotated record by how many records
+of its kind it stands for, so it covers the whole run. The sample was drawn from the
+baseline, so on the rules run it's only approximate: check it against the random
+sample's figures, which it prints too.
+
+```bash
+python scripts/jev_eval.py config --labels assets/labels.json --instructions config/instructions_rules.txt --run jev_rules.jsonl --exclusive --threshold BILLING=0.8 --out config/jev_config.json
 ```
 
 | Argument | Value | Notes |
 |---|---|---|
-| `--input` | llm-labelled-sample | the same input as `jev-confident` |
-| `--settings.exclude` | jev_confident | leaves only the records below the cut-off |
-| `--settings.instructions` | review-guidelines | definitions and rules for annotators |
+| `--instructions` | `config/instructions_rules.txt` | `instructions_baseline.txt` if no rules were needed |
+| `--run` | jev_rules.jsonl | the run whose model version to pin, `jev_baseline.jsonl` if no rules were needed |
+| `--threshold` | `LABEL=VALUE`, repeatable | from the `thresholds` output |
+| `--exclusive` | | leave out for non-exclusive labels |
+
+`config/jev_config.json` holds the endpoint, the model version, the questions exactly
+as the actions send them, the thresholds and the decision rule. Your system sends
+`{"model", "state": <text>, "questions"}` to the endpoint with your TypeSafe key, and
+applies the rule to the answers. Record the thresholds and the scores in the plan.
 
 ## Scripts
 
 [`scripts/jev_eval.py`](scripts/jev_eval.py) runs locally on exported datasets and
 needs only the Python standard library:
 
-- `labels <labels.json> --out <file>`: the adjudication label scheme, at setup.
-- `agreement <run>`: agreement and Cohen's κ with the LLM, the most common
-  disagreements, agreement by Jev's confidence, and how many records each cut-off
-  sends to a person. After every Jev run.
-- `sample <run> --out <file>`: the blind adjudication input, before `adjudicate`.
-- `adjudicated <adjudication> <name>=<run> ...`: how many judged records the LLM and
-  each Jev run match, and whose answer the annotator chose on the disagreements.
-  After `adjudicate`, and again after each rules run.
+| Command | When |
+|---|---|
+| `labels` | at setup, for the annotation label scheme |
+| `agreement` | after each run with LLM labels: agreement, κ, the most common disagreements, agreement by Jev's confidence |
+| `sample` | before each annotation task: the blind sample and its key |
+| `adjudicated` | after each annotation task, and after each rules run: matches with the annotator, accuracy on the random sample, and with `--show`, the texts behind Jev's mistakes |
+| `thresholds` | before exporting: estimated accuracy at each threshold |
+| `config` | to export the configuration |
+| `drift` | on each check: Jev's labels and confidence against an earlier run |
 
 ## Plans
 
@@ -319,4 +406,4 @@ created, replace each with a concept link to the new resource's id (the
 
 ---
 
-*Exported: 2026-10-28T10:55:11Z &middot; Template format: 1 &middot; Ellf CLI: 21.0.8 &middot; Recipe packages: ellf-recipes 0.18.19 &middot; Exported with: Claude Code 2.1.312 (claude-opus-5-5)*
+*Exported: 2026-10-29T10:10:02Z &middot; Template format: 1 &middot; Ellf CLI: 21.0.8 &middot; Recipe packages: ellf-recipes 0.18.19 &middot; Exported with: Claude Code 2.1.312 (claude-opus-5-5)*
