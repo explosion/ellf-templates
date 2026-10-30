@@ -5,7 +5,7 @@ one in production and have never checked it. The outcome is how often the classi
 agrees with people, where it goes wrong, and a set of settled labels to re-check every
 prompt change against.
 
-*Import it with the [`/ellf-template`](https://ellf.ai/docs/modules#template) skill,
+*Exported from [Ellf](https://ellf.ai) on 2026-10-29. Import it with the [`/ellf-template`](https://ellf.ai/docs/modules#template) skill,
 or set it up by hand with the commands below.*
 
 ## How it works
