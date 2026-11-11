@@ -3,9 +3,10 @@
     "name": "llm-to-jev",
     "title": "Replacing an LLM Classifier with Jev",
     "description": "Evaluate moving an LLM-based classifier to Jev, which answers with calibrated probabilities instead of text, and carry the move out. Compares Jev with the LLM on past records, has a person annotate a blind sample of disagreements and random records in about an hour, uses the annotations to add rules and choose per-label thresholds, and exports a configuration to run Jev in production, with optional checks for drift.",
-    "use_cases": [
+    "tags": [
       "Text Classification",
-      "Evaluation"
+      "Evaluation",
+      "Jev"
     ],
     "counts": {
       "tasks": 2,
@@ -26,9 +27,10 @@
     "name": "llm-classifier-eval",
     "title": "Evaluating an LLM Classifier",
     "description": "Measure a classifier that's built on an LLM prompt against people, without changing it. An action reads its logged decisions, sampling by label, or runs it over a random sample of texts, and saves its answers as one more annotator; people label the same texts blind after a short pilot, the built-in review settles every disagreement, and the annotation dashboard shows how often it agrees with the settled labels and which labels it confuses.",
-    "use_cases": [
+    "tags": [
       "Evaluation",
-      "Text Classification"
+      "Text Classification",
+      "Streamlit"
     ],
     "counts": {
       "tasks": 4,
@@ -49,9 +51,11 @@
     "name": "helpdesk-routing",
     "title": "Helpdesk Routing with Jev",
     "description": "Find out whether Jev is good enough to route IT support tickets to the right technician by problem area. Settles the label scheme in a pilot with a Gemini second opinion, builds a human-labelled evaluation set with an agreement check and a blind slip check, scores Jev against a bar agreed in advance, and sets up daily routing with a monthly problem-area report.",
-    "use_cases": [
+    "tags": [
       "Text Classification",
-      "Evaluation"
+      "Evaluation",
+      "Jev",
+      "Google Gemini"
     ],
     "counts": {
       "tasks": 9,
@@ -73,11 +77,13 @@
     "name": "support-insights",
     "title": "Support Ticket Insights",
     "description": "Extract products, features, error codes, versions and integrations from customer support tickets and route each ticket to the right queue. An LLM drafts the entity annotations, people curate them, a pretrained pipeline suggests the generic entity types, and the passes are adjudicated into a gold set that trains a custom spaCy NER pipeline and a separate routing classifier.",
-    "use_cases": [
+    "tags": [
       "Information Extraction",
       "Text Classification",
       "LLM Distillation",
-      "Evaluation"
+      "Evaluation",
+      "spaCy",
+      "Google Gemini"
     ],
     "counts": {
       "tasks": 8,
@@ -98,9 +104,10 @@
     "name": "github-docs-issues",
     "title": "GitHub Docs Issue Classifier",
     "description": "Train a binary text classifier that predicts whether a GitHub issue is about documentation. Annotate a single label with accept or reject on the included GitHub issues or your own, then train a spaCy pipeline on the answers.",
-    "use_cases": [
+    "tags": [
       "Getting Started",
-      "Text Classification"
+      "Text Classification",
+      "spaCy"
     ],
     "counts": {
       "tasks": 1,
@@ -118,10 +125,12 @@
     "name": "food-ingredients-ner",
     "title": "Food Ingredient Extraction",
     "description": "Train a named entity recognizer that finds food ingredients in cooking comments from Reddit or your own texts. Highlight ingredients with match patterns as suggestions, train a quick first model on CPU and a more accurate transformer-based pipeline on GPU, and optionally correct the first model's suggestions in a second round and check the annotations in a dashboard.",
-    "use_cases": [
+    "tags": [
       "Getting Started",
       "Information Extraction",
-      "Named Entity Recognition"
+      "Named Entity Recognition",
+      "spaCy",
+      "Hugging Face"
     ],
     "counts": {
       "tasks": 2,

@@ -23,7 +23,7 @@ You can also use `ellf-template` to [export](https://ellf.ai/docs/templates#crea
 
 Evaluate moving an LLM-based classifier to Jev, which answers with calibrated probabilities instead of text, and carry the move out. Compares Jev with the LLM on past records, has a person annotate a blind sample of disagreements and random records in about an hour, uses the annotations to add rules and choose per-label thresholds, and exports a configuration to run Jev in production, with optional checks for drift.
 
-**Use cases:** Text Classification, Evaluation
+**Tags:** Text Classification, Evaluation, Jev
 
 | Tasks | Actions | Plans | API keys |
 | :---: | :---: | :---: | --- |
@@ -33,7 +33,7 @@ Evaluate moving an LLM-based classifier to Jev, which answers with calibrated pr
 
 Measure a classifier that's built on an LLM prompt against people, without changing it. An action reads its logged decisions, sampling by label, or runs it over a random sample of texts, and saves its answers as one more annotator; people label the same texts blind after a short pilot, the built-in review settles every disagreement, and the annotation dashboard shows how often it agrees with the settled labels and which labels it confuses.
 
-**Use cases:** Evaluation, Text Classification
+**Tags:** Evaluation, Text Classification, Streamlit
 
 | Tasks | Actions | Services | Custom recipes | Plans | API keys |
 | :---: | :---: | :---: | :---: | :---: | --- |
@@ -43,7 +43,7 @@ Measure a classifier that's built on an LLM prompt against people, without chang
 
 Find out whether Jev is good enough to route IT support tickets to the right technician by problem area. Settles the label scheme in a pilot with a Gemini second opinion, builds a human-labelled evaluation set with an agreement check and a blind slip check, scores Jev against a bar agreed in advance, and sets up daily routing with a monthly problem-area report.
 
-**Use cases:** Text Classification, Evaluation
+**Tags:** Text Classification, Evaluation, Jev, Google Gemini
 
 | Tasks | Actions | Agents | Plans | Sample data | API keys |
 | :---: | :---: | :---: | :---: | :---: | --- |
@@ -53,7 +53,7 @@ Find out whether Jev is good enough to route IT support tickets to the right tec
 
 Extract products, features, error codes, versions and integrations from customer support tickets and route each ticket to the right queue. An LLM drafts the entity annotations, people curate them, a pretrained pipeline suggests the generic entity types, and the passes are adjudicated into a gold set that trains a custom spaCy NER pipeline and a separate routing classifier.
 
-**Use cases:** Information Extraction, Text Classification, LLM Distillation, Evaluation
+**Tags:** Information Extraction, Text Classification, LLM Distillation, Evaluation, spaCy, Google Gemini
 
 | Tasks | Actions | Agents | Services | Plans | Sample data | API keys |
 | :---: | :---: | :---: | :---: | :---: | :---: | --- |
@@ -63,7 +63,7 @@ Extract products, features, error codes, versions and integrations from customer
 
 Train a binary text classifier that predicts whether a GitHub issue is about documentation. Annotate a single label with accept or reject on the included GitHub issues or your own, then train a spaCy pipeline on the answers.
 
-**Use cases:** Getting Started, Text Classification
+**Tags:** Getting Started, Text Classification, spaCy
 
 | Tasks | Actions | Plans | Sample data |
 | :---: | :---: | :---: | :---: |
@@ -73,7 +73,7 @@ Train a binary text classifier that predicts whether a GitHub issue is about doc
 
 Train a named entity recognizer that finds food ingredients in cooking comments from Reddit or your own texts. Highlight ingredients with match patterns as suggestions, train a quick first model on CPU and a more accurate transformer-based pipeline on GPU, and optionally correct the first model's suggestions in a second round and check the annotations in a dashboard.
 
-**Use cases:** Getting Started, Information Extraction, Named Entity Recognition
+**Tags:** Getting Started, Information Extraction, Named Entity Recognition, spaCy, Hugging Face
 
 | Tasks | Actions | Services | Plans | GPU | Sample data |
 | :---: | :---: | :---: | :---: | :---: | :---: |
