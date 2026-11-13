@@ -98,7 +98,13 @@
     "sample_data": true,
     "api_keys": [
       "Google AI"
-    ]
+    ],
+    "link": {
+      "title": "Support Ticket Insights: Custom NLP with Claude Code and agents",
+      "description": "How to turn an LLM prototype into a fast, cheap and fully private NLP component",
+      "url": "https://www.youtube.com/watch?v=WvlUl5c9-zM&list=PLLU8Ghv6hhVA&index=2",
+      "icon": "youtube"
+    }
   },
   {
     "name": "github-docs-issues",
