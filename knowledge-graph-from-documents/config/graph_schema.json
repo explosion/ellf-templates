@@ -1,0 +1,41 @@
+{
+  "entity_types": {
+    "TYPE_A": {
+      "description": "Replace with your first entity type: what counts as a mention of it.",
+      "linked": true,
+      "level": "Which level of the entity list an entry is.",
+      "multiple": false,
+      "nil": "node",
+      "max_candidates": 5,
+      "ignore_words": []
+    },
+    "TYPE_B": {
+      "description": "Replace with your second entity type.",
+      "linked": true,
+      "nil": "drop"
+    }
+  },
+  "relations": [
+    {
+      "name": "RELATION_GROUP",
+      "head": ["TYPE_A"],
+      "tail": ["TYPE_B"],
+      "labels": {
+        "LABEL_ONE": {"description": "What the passage must state for this label.", "do_not_mark": []},
+        "LABEL_TWO": {"description": "Another relation between the same two types."}
+      },
+      "directed": true,
+      "exclusive": true,
+      "scope": "passage",
+      "conditions": {},
+      "combine": "any"
+    }
+  ],
+  "checks": [
+    {
+      "name": "No entity is linked to itself",
+      "description": "A link from an entity to itself is a linking error.",
+      "cypher": "MATCH (e:Entity)-[r]->(e) WHERE type(r) <> 'MENTIONS' RETURN e.id AS entity, type(r) AS label LIMIT 20"
+    }
+  ]
+}

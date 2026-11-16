@@ -1,0 +1,7 @@
+# These requirements are installed into the recipe image when you publish the
+# package. Only list what the base recipes image doesn't include: every package
+# listed here is installed again, even if the image already has it.
+#
+# The package needs nothing beyond the base image. Java and Neo4j aren't Python
+# packages: the service downloads them when it first starts (see
+# kg_recipes/neo4j_runtime.py).

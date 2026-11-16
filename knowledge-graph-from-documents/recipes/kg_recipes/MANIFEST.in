@@ -1,0 +1,2 @@
+include requirements.in
+recursive-include kg_recipes/static *

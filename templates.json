@@ -150,5 +150,32 @@
     "author": "Explosion",
     "gpu": true,
     "sample_data": true
+  },
+  {
+    "name": "knowledge-graph-from-documents",
+    "title": "Knowledge Graph from Documents",
+    "description": "Build a graph of the entities your documents mention and the relations between them, where every link opens the passages behind it, and measure how far it can be trusted. Mentions are labelled by rules, models, agents or people, linked to your own entity list through yes/no questions about candidate entries, and paired up for relation questions; reviews settle each step, the evaluation documents give gold labels to score every labeller and the finished graph, and a service runs Neo4j with the schema's checks, the questions the graph was built for and an API.",
+    "tags": [
+      "Information Extraction",
+      "Named Entity Recognition",
+      "Text Classification",
+      "Evaluation",
+      "spaCy",
+      "Google Gemini"
+    ],
+    "counts": {
+      "tasks": 5,
+      "actions": 8,
+      "agents": 2,
+      "services": 1,
+      "recipes": 10,
+      "plans": 1
+    },
+    "url": "https://github.com/explosion/ellf-templates/tree/main/knowledge-graph-from-documents",
+    "author": "Explosion",
+    "sample_data": false,
+    "api_keys": [
+      "Google AI"
+    ]
   }
 ]
