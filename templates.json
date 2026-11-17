@@ -158,9 +158,10 @@
     "tags": [
       "Information Extraction",
       "Named Entity Recognition",
-      "Text Classification",
+      "Relation Extraction",
       "Evaluation",
-      "spaCy"
+      "spaCy",
+      "Neo4j"
     ],
     "counts": {
       "tasks": 5,
