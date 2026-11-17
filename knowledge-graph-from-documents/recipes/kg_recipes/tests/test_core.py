@@ -272,7 +272,7 @@ def test_tokenizer_splits_and_survives_saving(tmp_path):
 def test_llm_lines_and_failures():
     from kg_recipes.llm import LLM, proposer
 
-    llm = LLM("key")
+    llm = LLM("key", "model", "https://example.com/v1/chat/completions")
     llm.complete = lambda prompt: "```\n1. Diabetes Mellitus\n- Diabetes\n\n* Diabetes\n```".strip("`")
     assert llm.lines("p", 5) == ["Diabetes Mellitus", "Diabetes"]
 
@@ -286,6 +286,16 @@ def test_llm_lines_and_failures():
     with pytest.raises(RuntimeError):
         for _ in range(5):
             propose("x")
+
+
+def test_llm_settings_need_model_and_url():
+    from kg_recipes.llm import from_settings
+
+    assert from_settings(None, "", "") is None
+    with pytest.raises(ValueError, match="--llm-model and --llm-url"):
+        from_settings("key", "", " ")
+    llm = from_settings("key", " some-model ", "https://example.com/v1/chat/completions")
+    assert (llm.model, llm.url) == ("some-model", "https://example.com/v1/chat/completions")
 
 
 def test_question_text_puts_the_candidate_first_and_trims_context():

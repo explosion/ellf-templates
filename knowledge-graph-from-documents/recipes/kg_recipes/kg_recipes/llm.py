@@ -9,20 +9,20 @@ import json
 import re
 import urllib.request
 from dataclasses import dataclass, field
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Optional
 
-#: Gemini's OpenAI-compatible endpoint. Others: https://api.openai.com/v1/chat/completions,
-#: https://api.anthropic.com/v1/chat/completions, or your own server's.
-DEFAULT_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
-DEFAULT_MODEL = "gemini-3.8-flash"
+# There's no default provider or model: they're the user's choice. Some endpoints:
+# https://api.openai.com/v1/chat/completions, https://api.anthropic.com/v1/chat/completions,
+# https://generativelanguage.googleapis.com/v1beta/openai/chat/completions (Gemini),
+# https://api.mistral.ai/v1/chat/completions, or your own server's.
 FENCE_RE = re.compile(r"^```[a-zA-Z]*\s*|\s*```$")
 
 
 @dataclass
 class LLM:
     api_key: str
-    model: str = DEFAULT_MODEL
-    url: str = DEFAULT_URL
+    model: str
+    url: str
     timeout: float = 60
     usage: Dict[str, int] = field(default_factory=lambda: {"calls": 0, "failed": 0, "input_tokens": 0, "output_tokens": 0})
 
@@ -57,6 +57,19 @@ class LLM:
             f"{u['calls']} calls to {self.model} ({u['failed']} failed), "
             f"{u['input_tokens']:,} input and {u['output_tokens']:,} output tokens"
         )
+
+
+def from_settings(api_key: Optional[str], model: str, url: str) -> Optional[LLM]:
+    """The LLM a recipe's ``llm_*`` arguments describe, or None without a key."""
+    if api_key is None:
+        return None
+    missing = [arg for arg, value in (("--llm-model", model), ("--llm-url", url)) if not value.strip()]
+    if missing:
+        raise ValueError(
+            f"--llm-api-key also needs {' and '.join(missing)}: your provider's model name and its "
+            "OpenAI-compatible chat completions endpoint."
+        )
+    return LLM(api_key, model.strip(), url.strip())
 
 
 def proposer(llm: LLM, prompt: Callable[..., str], n: int = 5) -> Callable[..., List[str]]:

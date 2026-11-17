@@ -19,7 +19,7 @@ from ellf_recipes_sdk import Input, InputDataset, OptionalProps, Props, Secret, 
 
 from .. import schema as kg_schema
 from ..app import create_app, parse_questions
-from ..llm import DEFAULT_MODEL, DEFAULT_URL, LLM
+from ..llm import from_settings
 from ..graph import Sources
 
 PORT = 8000
@@ -62,8 +62,8 @@ PORT = 8000
             optional_title="Answer questions in plain language",
             description="Stored as an Ellf secret. A plain-language question and the schema are sent to the provider to write a query.",
         ),
-        "llm_model": TextProps(title="LLM model", description="The model that writes queries."),
-        "llm_url": TextProps(title="LLM API URL", description="Any OpenAI-compatible chat completions endpoint. The default is Gemini's."),
+        "llm_model": TextProps(title="LLM model", description="Your provider's name for the model that writes queries."),
+        "llm_url": TextProps(title="LLM API URL", description="Your provider's OpenAI-compatible chat completions endpoint."),
     },
 )
 def kg_graph(
@@ -79,8 +79,8 @@ def kg_graph(
     relations_labelled: Optional[List[InputDataset]] = None,
     scores: Optional[Input] = None,
     llm_api_key: Optional[Secret] = None,
-    llm_model: str = DEFAULT_MODEL,
-    llm_url: str = DEFAULT_URL,
+    llm_model: str = "",
+    llm_url: str = "",
 ):
     """Build the graph and serve it. Returns the web app, which the SDK serves on ``PORT``."""
     graph_schema = kg_schema.load(schema.path)
@@ -103,6 +103,6 @@ def kg_graph(
         "relations": ", ".join(d.name for d in relations),
     }
     figures = json.loads(Path(scores.path).read_text(encoding="utf-8")) if scores is not None else None
-    llm = LLM(llm_api_key.value(), llm_model, llm_url) if llm_api_key is not None else None
+    llm = from_settings(llm_api_key.value() if llm_api_key is not None else None, llm_model, llm_url)
     asked = parse_questions(Path(questions.path).read_text(encoding="utf-8"))
     return create_app(sources, asked, names, figures, llm)

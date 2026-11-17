@@ -160,8 +160,7 @@
       "Named Entity Recognition",
       "Text Classification",
       "Evaluation",
-      "spaCy",
-      "Google Gemini"
+      "spaCy"
     ],
     "counts": {
       "tasks": 5,
@@ -173,9 +172,6 @@
     },
     "url": "https://github.com/explosion/ellf-templates/tree/main/knowledge-graph-from-documents",
     "author": "Explosion",
-    "sample_data": false,
-    "api_keys": [
-      "Google AI"
-    ]
+    "sample_data": false
   }
 ]

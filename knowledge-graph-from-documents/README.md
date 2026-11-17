@@ -101,7 +101,7 @@ flowchart LR
 | Relation guidelines | asset (`instructions`) | Relation guidelines | template, filled in by you | [assets/relation_guidelines.md](assets/relation_guidelines.md) |
 | Link check guidelines | asset (`instructions`) | Link check guidelines | template | [assets/link_check_guidelines.md](assets/link_check_guidelines.md) |
 | Annotation interface | config | textcat_prodigy.json, mentions_prodigy.json | template | [config/](config/) |
-| LLM API key | secret | gemini-api-key | user, if you use an LLM anywhere | [What you need to provide](#what-you-need-to-provide) |
+| LLM API key | secret | llm-api-key | user, if you use an LLM anywhere | [What you need to provide](#what-you-need-to-provide) |
 | Mention answers | dataset (`spans`) | mentions, mentions-eval | created empty | [Datasets](#datasets) |
 | Settled mentions | dataset (`review`) | mentions-settled | created empty, with more than one labeller | [Datasets](#datasets) |
 | Gold mentions | dataset (`review`; `spans` with Gold labels) | mentions-gold | created empty | [Datasets](#datasets) |
@@ -127,7 +127,7 @@ flowchart LR
 | Relations | task (`textcat`) | relations-relation_group, relations-relation_group-eval | template | [Tasks](#relations) |
 | Reviews | task (`review`) | mentions-review, links-review, links-fix-review, relations-relation_group-review, and the -eval-review tasks | template | [Tasks](#reviews) |
 | Link check | task (`textcat`) | link-check | template | [Tasks](#link-check) |
-| LLM labellers | agent (`gemini_agent`, or any agent recipe) | smaller-llm, larger-llm | template, optional | [Agents](#agents) |
+| LLM labellers | agent (an agent recipe for your provider) | smaller-llm, larger-llm | template, optional | [Agents](#agents) |
 | Graph | service (`kg_graph`) | knowledge-graph | template | [Services](#knowledge-graph) |
 | Scores | script | score.py | template | [Scripts](#scorepy) |
 | Local graph builds | script | build_graph.py | template | [Scripts](#build_graphpy) |
@@ -139,8 +139,8 @@ after it comes once per relation group in your schema: `RELATION_GROUP` is the g
 the schema writes it (`--relation`), and `relation_group` the same in lower case, as
 `labels_from_schema.py` prints it, in every asset, dataset and job name.
 
-The jobs use the built-in recipes `textcat`, `review` and `gemini_agent` (or another
-agent recipe), and ten custom recipes from the package: the actions `kg_add_documents`,
+The jobs use the built-in recipes `textcat` and `review`, an agent recipe for your LLM
+provider if you use agents, and ten custom recipes from the package: the actions `kg_add_documents`,
 `kg_make_tokenizer`, `kg_import_gold`, `kg_find_mentions`, `kg_link_candidates`,
 `kg_fix_links`, `kg_make_pairs` and `kg_sample_links`, the task `kg_mentions` (the
 built-in `spans` task with the project's tokenizer, which the built-in one can't take),
@@ -202,10 +202,13 @@ and the service `kg_graph`.
   {"label": "TYPE_A", "pattern": [{"lower": "acme"}, {"lower": "corporation"}]}
   ```
 
-- **Secrets:** never included. If you use an LLM (agents, the names `link-candidates` and
-  `fix-links` can ask for, or plain-language questions in the service), create the key
-  yourself with `ellf secrets create gemini-api-key`. What each step sends to the provider
-  is listed with it.
+- **LLM provider and models (optional):** if you use an LLM (agents, the names
+  `link-candidates` and `fix-links` can ask for, or plain-language questions in the
+  service), which provider and which models. The template doesn't choose one: the
+  import asks. See [Customize](#customize) for what each step needs from the provider.
+- **Secrets:** never included. Create the provider's key yourself with `ellf secrets
+  create llm-api-key`; with more than one provider, one secret each. What each step sends
+  to the provider is listed with it.
 - **People** to pilot each task and to label the evaluation documents, assigned with
   `ellf users assign "<email>" --task <task>`, and someone to settle the reviews.
 - **For the service:** internet access from the cluster on its first start, to download
@@ -252,9 +255,15 @@ The template includes no data.
 - **Tokenizer:** `make-tokenizer` splits words at `( ) [ ] / + -` as well as spaCy's
   usual places. Change `--split` for your text: a mention can only start and end where
   the tokenizer splits.
-- **LLM provider:** every step that calls an LLM takes `--llm-url` and `--llm-model`:
-  any OpenAI-compatible chat completions endpoint (Gemini, OpenAI, Anthropic, Mistral, or
-  a server you run).
+- **LLM provider:** your choice; nothing defaults to one. The steps that call an LLM
+  (`link-candidates`, `fix-links`, the service) take `--llm-api-key` with `--llm-model`,
+  the provider's name for the model, and `--llm-url`, its OpenAI-compatible chat
+  completions endpoint, e.g. `https://api.openai.com/v1/chat/completions`,
+  `https://api.anthropic.com/v1/chat/completions`,
+  `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` (Gemini),
+  `https://router.huggingface.co/v1/chat/completions` (Hugging Face Inference Providers),
+  or a server you run. The agents need an agent recipe for the provider: see
+  [Agents](#agents).
 - **One label or several per pair:** a relation group's labels are exclusive by default.
   Set `"exclusive": false` in the schema when a passage can state two of them for the
   same pair, and create that group's relations tasks without `--labels-exclusive`.
@@ -506,8 +515,8 @@ same shape the reviews would, and the gold graph below can be built.
 |---|---|---|
 | `--ask-all` | on for the evaluation run | also ask about the groups a single exact match links |
 | `--broader` | off | for mentions no name matches exactly, also offer the broader entries of the candidates found (the list's `broader` field) |
-| `--llm-api-key` | gemini-api-key | optional: for mentions no name matches exactly, an LLM proposes up to 5 names the entry could be listed under, which are looked up too. Each such mention, its type and about 600 characters around it are sent to the provider; the log gives the calls and tokens |
-| `--llm-model`, `--llm-url` | gemini-3.8-flash, Gemini's endpoint | any OpenAI-compatible chat completions endpoint |
+| `--llm-api-key` | llm-api-key | optional: for mentions no name matches exactly, an LLM proposes up to 5 names the entry could be listed under, which are looked up too. Each such mention, its type and about 600 characters around it are sent to the provider; the log gives the calls and tokens |
+| `--llm-model`, `--llm-url` | your provider's | needed with `--llm-api-key`: the model and its OpenAI-compatible chat completions endpoint (see Customize) |
 
 The log counts the candidates by source. Decide on the optional ones from the
 evaluation run: see Customize.
@@ -678,24 +687,27 @@ that can fill them:
 |---|---|---|---|
 | A pretrained or fine-tuned model | mentions; links and relations as text classification | `hf_model_agent` (a Hugging Face model, on a GPU worker); a spaCy pipeline through `find-mentions` | stays on the cluster |
 | A decision model | links, relations, link check | the `textcat_jev` action (Jev), which keeps the answers it's confident about; exclude its dataset from the task to leave the rest to others | TypeSafe |
-| A smaller and a larger LLM | all | `gemini_agent`, `hf_llm_agent` (models on Hugging Face Inference Providers), or an agent recipe of your own | the model's provider |
+| A smaller and a larger LLM | all | the built-in `gemini_agent` (Gemini) or `hf_llm_agent` (models on Hugging Face Inference Providers), or an agent recipe of your own for another provider | the model's provider |
 
-Two LLMs of different sizes make fewer of the same mistakes than two of one size. The
-commands below create the LLM pair with `gemini_agent`; swap the recipe and its
-arguments for another. Providers retire models and reroute their names, which changes a
+Two LLMs of different sizes make fewer of the same mistakes than two of one size. Choose
+the provider and both models. Each block below has a command for each built-in recipe:
+run the one for your provider, with the model filled in, or create the agent with an
+agent recipe of your own. Providers retire models and reroute their names, which changes a
 labeller in the middle of a comparison: check the provider's current list before creating
 agents, and keep the same model for every run you compare.
 
 ### smaller-llm
 
 ```bash
-ellf agents create gemini_agent --name smaller-llm --idle-shutdown-seconds 600.0 --api-key gemini-api-key --model gemini-3.8-flash --no-start
+ellf agents create gemini_agent --name smaller-llm --idle-shutdown-seconds 600.0 --api-key llm-api-key --model <smaller-model> --no-start
+ellf agents create hf_llm_agent --name smaller-llm --idle-shutdown-seconds 600.0 --hf-token llm-api-key --model <smaller-model> --no-start
 ```
 
 ### larger-llm
 
 ```bash
-ellf agents create gemini_agent --name larger-llm --idle-shutdown-seconds 600.0 --api-key gemini-api-key --model gemini-4-hydrogen --no-start
+ellf agents create gemini_agent --name larger-llm --idle-shutdown-seconds 600.0 --api-key llm-api-key --model <larger-model> --no-start
+ellf agents create hf_llm_agent --name larger-llm --idle-shutdown-seconds 600.0 --hf-token llm-api-key --model <larger-model> --no-start
 ```
 
 Assign an agent to a task once the task exists, e.g.
@@ -754,7 +766,7 @@ ellf services create kg_graph --name knowledge-graph-gold --schema "Graph schema
 | Argument | Value | Notes |
 |---|---|---|
 | `--scores` | Scores | optional: the published `scores.json`, shown beside the answers |
-| `--llm-api-key`, `--llm-model`, `--llm-url` | gemini-api-key, gemini-3.8-flash, Gemini's endpoint | optional: plain-language questions; the question and the schema are sent to the provider |
+| `--llm-api-key`, `--llm-model`, `--llm-url` | llm-api-key, your provider's model and endpoint | optional: plain-language questions; the question and the schema are sent to the provider |
 
 ## Scripts
 

@@ -71,8 +71,8 @@ SUBDIR = "kg_recipes"
             optional_title="Add names an LLM proposes",
             description="An LLM proposes names the entry could be listed under. The mention, its type and the text around it are sent to the provider.",
         ),
-        "llm_model": TextProps(title="LLM model", description="The model that proposes names."),
-        "llm_url": TextProps(title="LLM API URL", description="Any OpenAI-compatible chat completions endpoint. The default is Gemini's."),
+        "llm_model": TextProps(title="LLM model", description="Your provider's name for the model that proposes names."),
+        "llm_url": TextProps(title="LLM API URL", description="Your provider's OpenAI-compatible chat completions endpoint."),
     },
 )
 def kg_fix_links(
@@ -86,8 +86,8 @@ def kg_fix_links(
     wider: int = 15,
     broader: bool = False,
     llm_api_key: Optional[Secret] = None,
-    llm_model: str = kg_llm.DEFAULT_MODEL,
-    llm_url: str = kg_llm.DEFAULT_URL,
+    llm_model: str = "",
+    llm_url: str = "",
     context: int = linking.CONTEXT,
 ) -> None:
     """Write the new questions to ``questions``."""
@@ -97,7 +97,7 @@ def kg_fix_links(
     by_passage = passages_by_id(read_assets([a.path for a in documents]))
     group_rows = read_assets([a.path for a in groups])
     entities = linking.EntityList.from_rows(read_jsonl(Path(entity_list.path)), graph)
-    llm = kg_llm.LLM(llm_api_key.value(), llm_model, llm_url) if llm_api_key is not None else None
+    llm = kg_llm.from_settings(llm_api_key.value() if llm_api_key is not None else None, llm_model, llm_url)
     propose = None
     if llm is not None:
         propose = kg_llm.proposer(llm, lambda g, context, n: linking.proposal_prompt(g, graph.entity_types[g.type], context, n))

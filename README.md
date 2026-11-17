@@ -83,11 +83,11 @@ Train a named entity recognizer that finds food ingredients in cooking comments 
 
 Build a graph of the entities your documents mention and the relations between them, with the passages behind every link, and measure how far it can be trusted. Mentions, links to your own entity list and relations are each labelled by rules, models, LLM agents or people and settled in reviews, and every labeller and the finished graph are scored on held-out evaluation documents. A service runs the graph in Neo4j on your cluster, with the schema's checks, the questions it was built for and an API.
 
-**Tags:** Information Extraction, Named Entity Recognition, Text Classification, Evaluation, spaCy, Google Gemini
+**Tags:** Information Extraction, Named Entity Recognition, Text Classification, Evaluation, spaCy
 
-| Tasks | Actions | Agents | Services | Custom recipes | Plans | API keys |
-| :---: | :---: | :---: | :---: | :---: | :---: | --- |
-| 5 | 8 | 2 | 1 | 10 | 1 | Google AI |
+| Tasks | Actions | Agents | Services | Custom recipes | Plans |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| 5 | 8 | 2 | 1 | 10 | 1 |
 
 ---
 

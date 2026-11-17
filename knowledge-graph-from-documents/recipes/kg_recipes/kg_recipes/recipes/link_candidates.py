@@ -72,8 +72,8 @@ SUBDIR = "kg_recipes"
             title="Ask about every group",
             description="Also ask about the groups a single exact match links: for the evaluation documents, so the gold labels cover them and the rule is scored.",
         ),
-        "llm_model": TextProps(title="LLM model", description="The model that proposes names."),
-        "llm_url": TextProps(title="LLM API URL", description="Any OpenAI-compatible chat completions endpoint. The default is Gemini's."),
+        "llm_model": TextProps(title="LLM model", description="Your provider's name for the model that proposes names."),
+        "llm_url": TextProps(title="LLM API URL", description="Your provider's OpenAI-compatible chat completions endpoint."),
         "context": IntProps(
             title="Context per question",
             description="Characters of text shown on each side of the mention, after the candidate. 0 shows the whole passage.",
@@ -109,8 +109,8 @@ def kg_link_candidates(
     broader: bool = False,
     ask_all: bool = False,
     llm_api_key: Optional[Secret] = None,
-    llm_model: str = kg_llm.DEFAULT_MODEL,
-    llm_url: str = kg_llm.DEFAULT_URL,
+    llm_model: str = "",
+    llm_url: str = "",
     context: int = linking.CONTEXT,
 ) -> None:
     """Write the mention groups to ``groups`` and the questions to ``questions``."""
@@ -125,7 +125,7 @@ def kg_link_candidates(
     entities = linking.EntityList.from_rows(read_jsonl(Path(entity_list.path)), graph)
     version = f"{entity_list.name} {entity_list.version}"
     mention_groups = linking.mention_groups(found, graph, doc_texts)
-    llm = kg_llm.LLM(llm_api_key.value(), llm_model, llm_url) if llm_api_key is not None else None
+    llm = kg_llm.from_settings(llm_api_key.value() if llm_api_key is not None else None, llm_model, llm_url)
     propose = None
     if llm is not None:
         propose = kg_llm.proposer(llm, lambda g, context, n: linking.proposal_prompt(g, graph.entity_types[g.type], context, n))
