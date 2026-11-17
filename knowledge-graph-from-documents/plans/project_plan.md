@@ -61,8 +61,9 @@ created again.
   majority).
 - **What every link carries:** the document, its version and date, the passage, the
   version of the entity list, and the method behind each label: the rule, or the
-  labeller with its model and version, and the version of the label scheme and
-  guidelines.
+  labellers by name, each with its answer. An agent's name stands for its model, so
+  record each agent's model and version, and the versions of the label scheme and
+  guidelines its tasks use, in the Decision Log.
 - **Checks:** Cypher queries that must return no rows, run on every build. A row is
   a contradiction or an impossible fact.
 
@@ -169,7 +170,8 @@ all label.
 @@Services/knowledge-graph@@ runs Neo4j inside the service, so the graph lives on
 your cluster and nowhere else. It's created with the schema, the questions file, the
 document assets and the settled datasets. On every start it rebuilds the graph from
-them and runs the checks; it doesn't start serving if a check returns rows. A
+them and runs the checks; while a check returns rows, the questions and the API answer
+with the failed checks instead of the graph. A
 service's arguments are fixed when it's created, so new documents or datasets mean
 creating it again.
 
@@ -199,8 +201,8 @@ The results of the checks are shown above the tabs.
 - read a node with its neighbours, or a link with its evidence;
 - export the graph, nodes and links with their provenance, as JSON lines.
 
-The same calls can be offered to MCP clients. Every request is read-only: Neo4j
-listens only inside the service, and writes are refused.
+Every request is read-only: Neo4j listens only inside the service, and writes are
+refused.
 
 ## Evaluation
 
@@ -213,7 +215,7 @@ them, from the evaluation documents asset (`documents-eval`) only.
 | Component | Gold labels | What's reported |
 |---|---|---|
 | Mentions | a person marks every mention in the evaluation documents, in @@Tasks/mentions-eval@@, settled into @@Datasets/mentions-gold@@ | precision and recall per entity type, for each method compared |
-| Entity linking | a person links every gold mention, NIL included, in @@Tasks/links-eval@@, into @@Datasets/links-gold@@ | candidate recall (the ceiling), accuracy when the right entry is a candidate, NIL precision and recall, per entity type and per document, and every error sorted as: right entry not a candidate, wrong entry, wrongly NIL, wrong type |
+| Entity linking | a person answers every candidate of every gold mention, the rule's included, in @@Tasks/links-eval@@, into @@Datasets/links-gold@@, flagging names whose right entry isn't a candidate | candidate recall (the ceiling), accuracy when the right entry is a candidate, NIL precision and recall, per entity type and per document, and every error sorted as: right entry not a candidate, wrong entry, wrongly NIL, wrong type |
 | Relations | a person labels each group's evaluation pairs, blind, alongside each method compared, settled into that group's gold dataset | accuracy per label, wrong and missed links, for the rules and each method compared |
 
 `scripts/score.py` reports every figure with a 95% interval. Roughly 100 examples
@@ -336,5 +338,6 @@ count matching errors separately from extraction errors.
 - **Absence answers state their recall**: _Rationale: a link the pipeline missed looks the same as a link that doesn't exist._
 - **Every link carries its document version and method**: _Rationale: documents are revised and methods change, and an answer that can't be traced to both can't be checked._
 - **Plain-language answers are marked unchecked**: _Rationale: a generated query can be wrong in ways the reader can't see, so only questions tested against expected answers are presented as checked._
-- **Built-in recipes for labelling; the template's own package only for the graph's steps**: _Rationale: the template has to work on any cluster, so its labellers are built-in task and agent recipes, and its package holds only what no built-in recipe does (documents, tokenizer, candidates, pairs, the service). Custom labelling packages a cluster happens to have are options for `/ellf-project` to raise, not steps of the method._
+- **Built-in recipes for labelling; the template's own package only for what no built-in recipe does**: the documents, the tokenizer, candidates, pairs, the service, and one labelling task, `kg_mentions`, the built-in spans task with the project's tokenizer, which the built-in one can't take. _Rationale: the template has to work on any cluster, so its labellers are built-in task and agent recipes. Custom labelling packages a cluster happens to have are options for `/ellf-project` to raise, not steps of the method._
+- **Gold labels are always the gold datasets**: a Gold labels asset is loaded into them, and the evaluation reviews settle into them otherwise; `score.py` reads only those. _Rationale: most projects have no gold labels to start with, so the evaluation has to work the same without them; one format means one scorer._
 - **Datasets chosen per component, at import**: _Rationale: how many a component needs follows from its labellers and the gold labels (one labeller needs no review, a Gold labels asset needs no evaluation reviews), so a fixed set either has empty datasets and reviews nobody runs, or misses the ones a project needs._

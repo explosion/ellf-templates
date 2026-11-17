@@ -101,6 +101,12 @@ def abbreviations(text: str) -> Dict[str, str]:
     return found
 
 
+def view_id(overlapping: bool) -> str:
+    """The mentions task's view: compact unless mentions can overlap. Every answer saved to
+    a mentions dataset uses it, since a review refuses datasets with different views."""
+    return "spans_manual" if overlapping else "ner_manual"
+
+
 def model_spans(nlp, texts: Iterable[str], label_map: Dict[str, str], types: Iterable[str]) -> Iterator[List[dict]]:
     """A pretrained pipeline's entities as spans, its labels mapped to entity types."""
     wanted = set(types)

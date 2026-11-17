@@ -81,7 +81,7 @@ Train a named entity recognizer that finds food ingredients in cooking comments 
 
 ### [Knowledge Graph from Documents](knowledge-graph-from-documents)
 
-Build a graph of the entities your documents mention and the relations between them, where every link opens the passages behind it, and measure how far it can be trusted. Mentions are labelled by rules, models, agents or people, linked to your own entity list through yes/no questions about candidate entries, and paired up for relation questions; reviews settle each step, the evaluation documents give gold labels to score every labeller and the finished graph, and a service runs Neo4j with the schema's checks, the questions the graph was built for and an API.
+Build a graph of the entities your documents mention and the relations between them, with the passages behind every link, and measure how far it can be trusted. Mentions, links to your own entity list and relations are each labelled by rules, models, LLM agents or people and settled in reviews, and every labeller and the finished graph are scored on held-out evaluation documents. A service runs the graph in Neo4j on your cluster, with the schema's checks, the questions it was built for and an API.
 
 **Tags:** Information Extraction, Named Entity Recognition, Text Classification, Evaluation, spaCy, Google Gemini
 

@@ -33,7 +33,8 @@ from ellf_recipes_sdk import (
 )
 
 from .. import schema as kg_schema
-from ..mentions import as_answer, label_tasks, model_spans
+from ..documents import is_whole_document
+from ..mentions import as_answer, label_tasks, model_spans, token_aligned, view_id
 
 
 @action_recipe(
@@ -94,20 +95,25 @@ def kg_find_mentions(
         raise ValueError("Choose patterns, a spaCy pipeline, or both.")
     mapping: Dict[str, str] = json.loads(label_map or "{}")
     nlp = tokenizer.load() if tokenizer is not None else spacy.blank(lang)
+    # The mentions task's view: a review fails on answers saved with different views.
+    view = view_id(overlapping)
+
+    def passages():
+        return (eg for eg in documents.load(rehash=True, dedup=True, input_key="text") if not is_whole_document(eg))
 
     def tasks():
-        return prodigy.recipes.spans.add_tokens(nlp, documents.load(rehash=True, dedup=True, input_key="text"))
+        return prodigy.recipes.spans.add_tokens(nlp, passages())
 
     def save(examples, annotator: str) -> int:
         batch, n = [], 0
         for eg in examples:
             batch.append(eg)
             if len(batch) >= 500:
-                save_examples(dataset.name, batch, session_id=annotator, parse_as=SpansManualExample, view_id="spans_manual")
+                save_examples(dataset.name, batch, session_id=annotator, parse_as=SpansManualExample, view_id=view)
                 n += len(batch)
                 batch = []
         if batch:
-            save_examples(dataset.name, batch, session_id=annotator, parse_as=SpansManualExample, view_id="spans_manual")
+            save_examples(dataset.name, batch, session_id=annotator, parse_as=SpansManualExample, view_id=view)
             n += len(batch)
         return n
 
@@ -116,7 +122,7 @@ def kg_find_mentions(
         matcher = patterns.load(nlp=nlp, label=types, allow_overlap=overlapping)
 
         def matched():
-            for _, eg in matcher(documents.load(rehash=True, dedup=True, input_key="text")):
+            for _, eg in matcher(passages()):
                 spans = [{"start": s["start"], "end": s["end"], "label": s["label"]} for s in eg.get("spans") or []]
                 yield as_answer({k: v for k, v in eg.items() if k != "spans"}, spans, annotator)
 
@@ -126,7 +132,14 @@ def kg_find_mentions(
     if model is not None:
         annotator = f"model:{model.name}"
         pipeline = model.load()
-        found = label_tasks(tasks(), lambda texts: model_spans(pipeline, texts, mapping, types), annotator)
+
+        def find(texts):
+            # The pipeline's own tokenizer can split differently from the project's: widen
+            # its entities to whole tokens, as the mentions task would mark them.
+            for text, spans in zip(texts, model_spans(pipeline, texts, mapping, types)):
+                yield token_aligned(nlp, text, spans)[0]
+
+        found = label_tasks(tasks(), find, annotator)
         n = save(prodigy.recipes.spans.add_tokens(nlp, found), annotator)
         log(f"Saved {n} passages labelled by {annotator}")
         print(f"Saved {n} passages labelled by {annotator}")

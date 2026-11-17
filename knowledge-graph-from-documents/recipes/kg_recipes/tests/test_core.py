@@ -228,6 +228,10 @@ def test_fix_rows_retry_and_split(graph_schema, tmp_path):
     for r in out:
         s = r["spans"][0]
         assert r["text"][s["start"] : s["end"]] == r["meta"]["mention"]
+    # A third round asks only about candidates no earlier round asked about.
+    second = answers + [({**r, "answer": "reject"}, "a") for r in retry]
+    third, _ = linking.fix_rows(rows[1:], second, entities, graph_schema, passages, wider=5)
+    assert not {r["meta"]["candidate_id"] for r in third} & {r["meta"]["candidate_id"] for r in retry}
 
 
 def test_mention_answers_override_their_group(graph_schema):
@@ -322,3 +326,37 @@ def test_pattern_matches_keep_the_longest_unless_overlapping():
         found[overlapping] = sorted(text[s["start"] : s["end"]] for s in eg["spans"])
     assert found[False] == ["abiraterone acetate"]
     assert found[True] == ["abiraterone", "abiraterone acetate"]
+
+
+def test_query_params_cant_set_read_only():
+    from kg_recipes import graph as kg_graph
+
+    sent = {}
+
+    class Fake(kg_graph.Neo4j):
+        def __init__(self):
+            pass
+
+        def run(self, statements, *, read_only=False, timeout=300):
+            sent.update(read_only=read_only, params=statements[0][1])
+            return [{"columns": [], "rows": []}]
+
+    Fake().query("RETURN 1", {"read_only": False, "statement": "x"})
+    assert sent["read_only"] is True and sent["params"] == {"read_only": False, "statement": "x"}
+
+
+def test_read_only_sees_through_comments_and_strings():
+    import pytest
+
+    from kg_recipes import app, graph as kg_graph
+
+    for statement in ("LOAD/**/CSV FROM 'http://x' AS r RETURN r", "CALL /* */ dbms.listConfig()", "MATCH (n) // x\nSET n.a = 1"):
+        with pytest.raises(kg_graph.Neo4jError):
+            app.read_only(statement)
+    assert app.read_only("MATCH (e:Entity) WHERE e.name = 'set up' RETURN e")
+
+
+def test_whole_document_passage_isnt_labelled():
+    doc = documents.parse_document({"doc_id": "D", "text": "One.\n\nTwo."}, whole_document=True)
+    rows = list(documents.passage_rows(doc))
+    assert [documents.is_whole_document(r) for r in rows] == [False, False, True]

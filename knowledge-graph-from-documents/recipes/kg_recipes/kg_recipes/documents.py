@@ -15,6 +15,11 @@ The Documents asset then has one row per passage, in the shape tasks read:
 
 A passage's kind is "paragraph", "table_row" or "document"; a "document" passage is the
 whole document, for relations that are stated across a document rather than in one place.
+It only shows the pairs of those relations: mentions are marked in the other passages, so
+the mentions task, find-mentions and import-gold leave it out.
+
+Passages with no text are dropped, so a passage's index (the number in its "passage_id",
+and the "passage" of the gold labels) counts only the passages that have text.
 """
 
 import hashlib
@@ -145,6 +150,11 @@ def doc_key(meta: dict) -> Tuple[str, str]:
 def known_documents(rows: Iterable[dict]) -> set:
     """The (id, version) of every document in earlier Documents assets."""
     return {doc_key(r.get("meta") or {}) for r in rows}
+
+
+def is_whole_document(row: dict) -> bool:
+    """Whether a Documents row is a "document" passage, which isn't labelled for mentions."""
+    return (row.get("meta") or {}).get("kind") == "document"
 
 
 def passages_by_id(rows: Iterable[dict]) -> Dict[str, dict]:

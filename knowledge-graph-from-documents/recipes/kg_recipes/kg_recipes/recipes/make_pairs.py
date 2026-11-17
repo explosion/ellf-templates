@@ -106,18 +106,34 @@ def kg_make_pairs(
         labels = kg_gold.gold_relations(read_jsonl(Path(gold.path)), by_doc, graph)
         stands_for = kg_pairs.gold_ids_of_text_nodes(gold_mentions, graph)
         stream = prodigy.recipes.textcat.add_label_options((set_hashes(dict(r)) for r in out), group.all_labels)
-        answers = []
+        answers, covered = [], set()
         for row in stream:
             m = row["meta"]
             where = m["doc_id"] if group.scope == "document" else m["passage_id"]
             found = set()
             for h in stands_for.get(m["head_id"]) or {m["head_id"]}:
                 for t in stands_for.get(m["tail_id"]) or {m["tail_id"]}:
-                    found |= labels.get(kg_gold.relation_key(group.name, where, h, t, group.directed), set())
+                    key = kg_gold.relation_key(group.name, where, h, t, group.directed)
+                    if key in labels:
+                        found |= labels[key]
+                        covered.add(key)
             accept = sorted(found) or [kg_schema.NONE]
             answers.append({**row, "accept": accept, "answer": "accept", "_annotator_id": "gold", "_session_id": "gold"})
         save_examples(gold_relations.name, answers, session_id="gold", parse_as=TextcatChoiceExample, view_id="choice")
-        print(f"Saved {len(answers)} gold relation answers to '{gold_relations.name}'.")
+        # Gold relations with no pair can't be labelled by anyone: an entity dropped as NIL,
+        # a mention the gold labels don't have, or a passage-scope relation with no passage.
+        total = sum(1 for k in labels if k[0] == group.name)
+        no_passage = sum(
+            1
+            for r in read_jsonl(Path(gold.path))
+            for rel in r.get("relations") or []
+            if group.scope == "passage" and rel.get("passage") is None and graph.relation_for_label(rel["label"]) is group
+        )
+        msg = f"Saved {len(answers)} gold relation answers to '{gold_relations.name}'. {len(covered)} of the {total} gold {relation} relations are among the pairs."
+        if no_passage:
+            msg += f" {no_passage} gold {relation} relations have no passage, which a passage-scope group needs, and were left out."
+        log(msg)
+        print(msg)
     undecided = sum(1 for g in group_rows if g["group_id"] not in resolved)
     msg = f"Wrote {n} {relation} pairs. {undecided} mention groups aren't linked yet and were left out."
     log(msg)

@@ -545,12 +545,18 @@ def fix_rows(
     """Questions for what the settled answers leave unresolved, and how many of each kind.
 
     - *retry*: every candidate of the group was rejected. A wider search (up to ``wider``
-      candidates, plus the optional sources), without the candidates already asked about.
+      candidates, plus the optional sources), without the candidates already asked about
+      in any earlier round, so a third round asks only about new ones.
     - *split*: the group was linked to more than one entry, but its type links a mention
       to one. One question per mention and entry.
     """
     resolved = resolve(group_rows_, answers)
     by_mention = mention_answers(answers)
+    answered: Dict[str, Set[str]] = defaultdict(set)
+    for eg, _ in answers:
+        meta = eg.get("meta") or {}
+        if meta.get("group_id") and meta.get("candidate_id") and not meta.get("mention_key"):
+            answered[meta["group_id"]].add(meta["candidate_id"])
     rows: List[dict] = []
     counts = {"retry": 0, "split": 0, "unchanged": 0}
     for row in group_rows_:
@@ -561,7 +567,7 @@ def fix_rows(
         ids, how = decided
         g = group_from_row(row, passages)
         if not ids and how == "answers":
-            asked = {c.id for c in g.candidates}
+            asked = {c.id for c in g.candidates} | answered[g.group_id]
             found = entities.candidates(g.type, forms_of(g), wider, exclude=asked)
             proposed = propose(g, context_of(g, passages)) if propose else []
             g.candidates = entities.expand(g.type, found, wider, proposed, broader, exclude=asked)

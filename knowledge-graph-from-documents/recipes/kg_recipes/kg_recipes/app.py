@@ -33,7 +33,10 @@ from .schema import Schema
 #: Set these to use a Neo4j server you already run, e.g. for a local run on a laptop.
 #: The graph is loaded into it, replacing everything in its default database.
 URL_ENV, USER_ENV, PASSWORD_ENV = "KG_NEO4J_URL", "KG_NEO4J_USER", "KG_NEO4J_PASSWORD"
-WRITE_RE = re.compile(r"\b(CREATE|MERGE|DELETE|DETACH|SET|REMOVE|DROP|LOAD\s+CSV|CALL\s+dbms|CALL\s+apoc)\b", re.IGNORECASE)
+WRITE_RE = re.compile(r"\b(CREATE|MERGE|DELETE|DETACH|SET|REMOVE|DROP|LOAD\s+CSV|CALL\s+`?dbms|CALL\s+`?apoc)\b", re.IGNORECASE)
+#: Comments and string literals, taken out before the check: a comment can hide a keyword
+#: (``LOAD/**/CSV``), and a string can hold one without it being a write ('set up').
+COMMENT_OR_STRING_RE = re.compile(r"/\*.*?\*/|//[^\n]*|'(?:[^'\\]|\\.)*'|\"(?:[^\"\\]|\\.)*\"", re.DOTALL)
 
 
 @dataclass
@@ -174,7 +177,7 @@ SUBGRAPH_LIMIT = 150
 
 
 def read_only(statement: str) -> str:
-    if WRITE_RE.search(statement):
+    if WRITE_RE.search(COMMENT_OR_STRING_RE.sub(" ", statement)):
         raise graph.Neo4jError("Only read-only queries are allowed.")
     return statement
 
@@ -250,7 +253,7 @@ def create_app(
         if q is None:
             raise KeyError(request.path_params["name"])
         params = {k: typed(request.query_params[k], v) if k in request.query_params else v for k, v in q.params.items()}
-        rows = db.query(q.cypher, **params)
+        rows = db.query(q.cypher, params)
         result = {"name": q.name, "title": q.title, "cypher": q.cypher, "params": params, "rows": rows, "checked": True, "figures": figures_for(q), "absence": q.absence}
         return with_entities(db, result)
 
@@ -338,7 +341,9 @@ def create_app(
         if not statement:
             return JSONResponse({"error": "Type a query first."}, status_code=400)
         params = body.get("params") or {}
-        return await threaded(request, lambda req, db: with_entities(db, {"rows": db.query(read_only(statement), **params), "checked": False}))
+        if not isinstance(params, dict):
+            return JSONResponse({"error": "params must be an object."}, status_code=400)
+        return await threaded(request, lambda req, db: with_entities(db, {"rows": db.query(read_only(statement), params), "checked": False}))
 
     async def ask(request: Request) -> JSONResponse:
         if llm is None:

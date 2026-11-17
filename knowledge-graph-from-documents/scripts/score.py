@@ -4,11 +4,14 @@ Run it from the template directory on files exported with `ellf datasets export`
 assets the actions wrote (`ellf files cp`). It needs only the standard library: it reads
 the template's own recipe package from `recipes/kg_recipes` without installing it.
 
+The gold labels are always the gold datasets, however they were made: settled by the
+evaluation reviews, or filled from a Gold labels asset by import-gold, link-candidates-eval
+--gold-links and make-pairs-eval --gold-relations, which write them in the same shape.
+
     python scripts/score.py mentions --gold mentions-gold.jsonl --answers mentions-eval.jsonl
-    python scripts/score.py linking --groups groups-eval.jsonl --gold gold.jsonl [--answers links-eval.jsonl]
-    python scripts/score.py relations --schema config/graph_schema.json --pairs pairs-eval.jsonl --gold gold.jsonl --answers relations-eval.jsonl
+    python scripts/score.py linking --groups mention-groups-eval.jsonl --gold links-gold.jsonl [--answers links-eval.jsonl]
+    python scripts/score.py relations --schema config/graph_schema.json --pairs pairs-eval.jsonl --gold relations-gold.jsonl --answers relations-eval.jsonl
     python scripts/score.py links --answers link-check.jsonl
-    python scripts/score.py graph --schema config/graph_schema.json --export graph.jsonl --gold gold.jsonl
     python scripts/score.py compare --graph graph-eval.jsonl --gold-graph graph-gold.jsonl
     python scripts/score.py questions --questions config/questions.json --answers answers/
 
@@ -27,6 +30,7 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "recipes" / "kg_recipes"))
 
+from kg_recipes import linking  # noqa: E402
 from kg_recipes import schema as kg_schema  # noqa: E402
 from kg_recipes.data import actor, flatten, read_jsonl  # noqa: E402
 from kg_recipes.gold import relation_key  # noqa: E402
@@ -67,10 +71,12 @@ def answers(path: str) -> List[Tuple[dict, str]]:
 def save(out: str, section: str, data: dict) -> None:
     path = Path(out)
     scores = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
-    if section == "graph_links":
+    if section in ("graph_links", "graph_vs_gold"):
         scores.setdefault("graph", {}).setdefault("links", {})
         for label, figures in data.items():
             scores["graph"]["links"].setdefault(label, {}).update(figures)
+        if section == "graph_vs_gold":
+            scores.setdefault("components", {})[section] = data
     else:
         scores.setdefault("components", {})[section] = data
     path.write_text(json.dumps(scores, indent=2), encoding="utf-8")
@@ -113,40 +119,29 @@ def cmd_mentions(args) -> None:
     save(args.out, "mentions", result)
 
 
-class GoldLinks:
-    """Gold entries by mention, from a gold labels asset.
+def gold_links(groups: List[dict], path: str) -> Tuple[Dict[str, List[Set[str]]], Set[str]]:
+    """Each group's gold entries, one set per mention, from an export of the gold links
+    dataset, and the groups whose gold answers were flagged.
 
-    A mention is found by its exact offsets, or else by the gold mention of its type that
-    overlaps it in the same passage: the mentions task widens gold spans that end inside
-    a token, so their offsets can differ from the gold file's.
+    An answer about one mention (a second-round question, or a gold labels asset where a
+    name has different entries in a document) overrides its group's for that mention. A
+    group with no gold answer isn't scored.
     """
-
-    def __init__(self, path: str):
-        self.exact: Dict[Tuple, Set[str]] = {}
-        self.by_passage: Dict[Tuple[str, str], List[Tuple[int, int, Set[str]]]] = defaultdict(list)
-        for row in read_jsonl(Path(path)):
-            for m in row.get("mentions") or []:
-                pid = f"{row['doc_id']}:{int(m.get('passage', 0))}"
-                ids = set(m.get("ids") or [])
-                start, end = int(m["start"]), int(m["end"])
-                self.exact[(pid, start, end, m["type"])] = ids
-                self.by_passage[(pid, m["type"])].append((start, end, ids))
-
-    def get(self, key: Tuple) -> Optional[Set[str]]:
-        if key in self.exact:
-            return self.exact[key]
-        pid, start, end, type_ = key
-        best, overlap = None, 0
-        for s, e, ids in self.by_passage.get((pid, type_), ()):
-            o = min(e, end) - max(s, start)
-            if o > overlap:
-                best, overlap = ids, o
-        return best
+    rows = answers(path)
+    by_group = {gid: set(ids) for gid, (ids, how) in linking.resolve(groups, rows).items() if how == "answers"}
+    by_mention = linking.mention_answers(rows)
+    flagged = {(eg.get("meta") or {}).get("group_id") for eg, _ in rows if eg.get("flagged")}
+    out = {}
+    for g in groups:
+        if g["group_id"] not in by_group:
+            continue
+        out[g["group_id"]] = [set(by_mention.get((str(p), int(s), int(e)), by_group[g["group_id"]])) for p, s, e in g["mentions"]]
+    return out, flagged
 
 
 def cmd_linking(args) -> None:
-    gold = GoldLinks(args.gold)
     groups = list(read_jsonl(Path(args.groups)))
+    gold, flagged = gold_links(groups, args.gold)
     said: Dict[str, Dict[str, Dict[str, bool]]] = defaultdict(lambda: defaultdict(dict))  # who -> group -> candidate -> yes
     if args.answers:
         for eg, who in answers(args.answers):
@@ -159,8 +154,7 @@ def cmd_linking(args) -> None:
     errors: Dict[str, Counter] = defaultdict(Counter)
     labellers: Dict[str, Dict[str, Counter]] = defaultdict(lambda: defaultdict(Counter))
     for g in groups:
-        keys = [tuple(m) + (g["type"],) for m in g["mentions"]]
-        golds = [ids for ids in (gold.get(k) for k in keys) if ids is not None]
+        golds = gold.get(g["group_id"])
         if not golds:
             continue
         right = set().union(*golds)
@@ -171,6 +165,8 @@ def cmd_linking(args) -> None:
         c["names with different entries per mention"] += len({frozenset(x) for x in golds}) > 1
         if not right:
             c["gold NIL"] += 1
+            # A reviewer who knows the right entry, but finds it among no candidate, flags it.
+            c["gold NIL, flagged"] += g["group_id"] in flagged
         else:
             c["entry exists"] += 1
             c["right entry among candidates"] += bool(right & cands)
@@ -207,7 +203,7 @@ def cmd_linking(args) -> None:
     print("Entity linking\n")
     for t, c in sorted(per_type.items()):
         print(t)
-        print(f"  mention groups {c['groups']}, gold NIL {c['gold NIL']}")
+        print(f"  mention groups with gold links {c['groups']}, gold NIL {c['gold NIL']}, of which flagged {c['gold NIL, flagged']}")
         print(f"  candidate recall (the ceiling)  {fmt(c['right entry among candidates'], c['entry exists'])}")
         print(f"  linked by rule                  {c['linked by rule']}, right {fmt(c['rule right'], c['linked by rule'])}")
         print(f"  no candidate, so NIL            {c['no candidate']}, of which gold is NIL {c['no candidate, gold NIL']}")
@@ -218,6 +214,7 @@ def cmd_linking(args) -> None:
             "rule_accuracy": figure(c["rule right"], c["linked by rule"]),
             "no_candidate": c["no candidate"],
             "no_candidate_gold_nil": c["no candidate, gold NIL"],
+            "gold_nil_flagged": c["gold NIL, flagged"],
             "right_entry_found_by": dict(found_by[t]),
             "names_with_different_entries_per_mention": c["names with different entries per mention"],
             "missed": missed[t],
@@ -241,6 +238,13 @@ def cmd_linking(args) -> None:
             }
         if errors[t]:
             print("  errors: " + ", ".join(f"{k} {v}" for k, v in errors[t].most_common()))
+    print(
+        "\nCandidate recall counts the right entries the gold has. Gold settled in the reviews can only"
+        "\nsay yes to a candidate, so a name whose right entry no source found is NIL there, unless the"
+        "\nreviewer flagged it: read the flagged ones before trusting the NIL figures. A Gold labels asset"
+        "\nhas every right entry. Groups with no candidate have no questions, so they're only scored with"
+        "\na Gold labels asset; ask about the rule's groups too with link-candidates-eval --ask-all."
+    )
     save(args.out, "linking", result)
 
 
@@ -252,19 +256,6 @@ def classify(ids: Set[str], right: Set[str], cands: Set[str]) -> str:
     if not ids and right:
         return "wrongly NIL"
     return "wrong entry"
-
-
-def gold_relations(path: str, schema) -> Dict[Tuple, Set[str]]:
-    """Each gold relation key's labels: one, or several in a group whose labels aren't exclusive."""
-    out: Dict[Tuple, Set[str]] = defaultdict(set)
-    for row in read_jsonl(Path(path)):
-        for r in row.get("relations") or []:
-            group = schema.relation_for_label(r["label"])
-            if group is None:
-                continue
-            where = row["doc_id"] if group.scope == "document" else f"{row['doc_id']}:{int(r.get('passage', 0))}"
-            out[relation_key(group.name, where, str(r["head"]), str(r["tail"]), group.directed)].add(r["label"])
-    return dict(out)
 
 
 def pair_key(meta: dict, schema) -> Tuple:
@@ -280,31 +271,27 @@ def labels_of(eg: dict) -> Optional[Set[str]]:
     return {l for l in eg["accept"] if l != NONE}
 
 
-def gold_by_pair(path: str, pairs: Dict[str, Tuple]) -> Optional[Dict[Tuple, Set[str]]]:
-    """Gold labels by relation key from an export of the gold relations dataset, or None
-    if the file is a gold labels asset instead."""
-    rows = list(read_jsonl(Path(path)))
-    if not rows or "relations" in rows[0]:
-        return None
-    out = {}
-    for row in rows:
-        eg = flatten(row)
+def gold_by_pair(path: str, pairs: Dict[str, Tuple]) -> Tuple[Dict[Tuple, Set[str]], int]:
+    """Gold labels by relation key from an export of the gold relations dataset (NONE left
+    out), and how many pairs it answers."""
+    out, answered = {}, 0
+    for eg, _ in answers(path):
         pid = (eg.get("meta") or {}).get("pair_id")
         labels = labels_of(eg)
-        if pid in pairs and labels:
-            out[pairs[pid]] = labels
-    return out
+        if pid in pairs and labels is not None:
+            answered += 1
+            if labels:
+                out[pairs[pid]] = labels
+    return out, answered
 
 
 def cmd_relations(args) -> None:
     schema = kg_schema.load(args.schema)
     pairs = {r["meta"]["pair_id"]: pair_key(r["meta"], schema) for r in read_jsonl(Path(args.pairs))}
-    gold = gold_by_pair(args.gold, pairs)
-    if gold is None:
-        gold = gold_relations(args.gold, schema)
-    keys = set(pairs.values())
-    covered = sum(1 for k in gold if k in keys)
-    print(f"Relations: {len(pairs)} pairs, {len(gold)} gold relations, {covered} of them among the pairs ({fmt(covered, len(gold))})\n")
+    gold, answered = gold_by_pair(args.gold, pairs)
+    if not answered:
+        sys.exit(f"No gold answers in {args.gold} for the pairs in {args.pairs}: is it an export of the gold relations dataset of these pairs?")
+    print(f"Relations: {len(pairs)} pairs, {answered} with a gold answer, {len(gold)} gold relations\n")
     by_who: Dict[str, Dict[Tuple, Set[str]]] = defaultdict(dict)
     for eg, who in answers(args.answers):
         pid = (eg.get("meta") or {}).get("pair_id")
@@ -346,29 +333,6 @@ def cmd_links(args) -> None:
     save(args.out, "graph_links", result)
 
 
-def cmd_graph(args) -> None:
-    schema = kg_schema.load(args.schema)
-    gold = gold_relations(args.gold, schema)
-    docs = {k[1].split(":")[0] for k in gold}
-    have: Set[Tuple[str, str, str, str]] = set()
-    for row in read_jsonl(Path(args.export)):
-        if row.get("kind") == "link":
-            group = schema.relation(row["group"])
-            for v in row.get("doc_versions") or []:
-                doc_id = v.split("@")[0]
-                if doc_id in docs:
-                    have.add((row["label"],) + relation_key(group.name, doc_id, row["head"], row["tail"], group.directed)[2:] + (doc_id,))
-    result = {}
-    print("Recall of the graph's links, on the documents with gold labels\n")
-    for label in sorted(set().union(*gold.values())):
-        want = [k for k, ls in gold.items() if label in ls]
-        hit = sum(1 for k in want if (label, k[2], k[3], k[1].split(":")[0]) in have)
-        p, low, high = interval(hit, len(want))
-        print(f"  {label:28} recall {fmt(hit, len(want))}")
-        result[label] = {"recall": p, "recall_low": low, "recall_high": high, "recall_n": len(want)}
-    save(args.out, "graph_links", result)
-
-
 def graph_links(path: str) -> Dict[str, Set[Tuple[str, str]]]:
     """Each label's links in a graph export, as (head, tail)."""
     out: Dict[str, Set[Tuple[str, str]]] = defaultdict(set)
@@ -385,7 +349,13 @@ def cmd_compare(args) -> None:
     for label in sorted(set(built) | set(gold)):
         hit = len(built[label] & gold[label])
         print(f"  {label:28} precision {fmt(hit, len(built[label]))}   recall {fmt(hit, len(gold[label]))}")
-        result[label] = {"precision": figure(hit, len(built[label])), "recall": figure(hit, len(gold[label]))}
+        p, low, high = interval(hit, len(gold[label]))
+        # The recall goes beside the link check's precision, which the service shows with
+        # the questions; this precision is on the evaluation documents only, so it's kept apart.
+        result[label] = {
+            "recall": p, "recall_low": low, "recall_high": high, "recall_n": len(gold[label]),
+            "precision_on_eval": figure(hit, len(built[label])),
+        }
     save(args.out, "graph_vs_gold", result)
 
 
@@ -428,20 +398,16 @@ def main() -> None:
     p.add_argument("--answers", required=True, help="export of the mentions dataset of the evaluation documents")
     p = sub.add_parser("linking", help="candidate recall, the rule and each labeller against the gold links")
     p.add_argument("--groups", required=True, help="the mention groups asset of the evaluation documents")
-    p.add_argument("--gold", required=True, help="the gold labels asset")
+    p.add_argument("--gold", required=True, help="export of the gold links dataset")
     p.add_argument("--answers", help="export of the links dataset of the evaluation questions")
     p = sub.add_parser("relations", help="each labeller's relation labels against the gold relations")
     p.add_argument("--schema", required=True)
     p.add_argument("--pairs", required=True, help="the pairs asset of the evaluation documents")
-    p.add_argument("--gold", required=True, help="an export of the gold relations dataset, or the gold labels asset")
+    p.add_argument("--gold", required=True, help="export of the relation group's gold dataset")
     p.add_argument("--answers", required=True, help="export of the relations dataset of the evaluation pairs")
     p = sub.add_parser("links", help="precision of the graph's links from the link-check task")
     p.add_argument("--answers", required=True, help="export of the link-check dataset")
-    p = sub.add_parser("graph", help="recall of the graph's links on the documents with gold labels")
-    p.add_argument("--schema", required=True)
-    p.add_argument("--export", required=True, help="the service's /api/export")
-    p.add_argument("--gold", required=True, help="the gold labels asset")
-    p = sub.add_parser("compare", help="a graph's links against the gold graph on the same documents")
+    p = sub.add_parser("compare", help="a graph's links against the gold graph on the same documents: the graph's recall")
     p.add_argument("--graph", required=True, help="a graph export, e.g. from build_graph.py")
     p.add_argument("--gold-graph", required=True, help="the gold graph's export")
     p = sub.add_parser("questions", help="each question's answer against its expected rows")
@@ -449,7 +415,7 @@ def main() -> None:
     p.add_argument("--answers", required=True, help="a folder of the service's api/questions/<name> responses, as <name>.json")
     p.add_argument("--show", type=int, default=10, help="how many missing and unexpected rows to list per question")
     args = parser.parse_args()
-    {"mentions": cmd_mentions, "linking": cmd_linking, "relations": cmd_relations, "links": cmd_links, "graph": cmd_graph, "compare": cmd_compare, "questions": cmd_questions}[args.cmd](args)
+    {"mentions": cmd_mentions, "linking": cmd_linking, "relations": cmd_relations, "links": cmd_links, "compare": cmd_compare, "questions": cmd_questions}[args.cmd](args)
 
 
 if __name__ == "__main__":

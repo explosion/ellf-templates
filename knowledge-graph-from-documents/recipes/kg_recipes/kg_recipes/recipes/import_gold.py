@@ -17,13 +17,13 @@ import spacy
 from prodigy.structured_types import SpansManualExample
 from prodigy.util import log, set_hashes
 
-from ellf_recipes_sdk import Dataset, Input, Model, OptionalProps, Props, TextProps, action_recipe, save_examples
+from ellf_recipes_sdk import BoolProps, Dataset, Input, Model, OptionalProps, Props, TextProps, action_recipe, save_examples
 
 from .. import gold as kg_gold
 from .. import schema as kg_schema
 from ..data import read_assets, read_jsonl
-from ..documents import documents_by_id, passages_by_id
-from ..mentions import token_aligned
+from ..documents import documents_by_id, is_whole_document, passages_by_id
+from ..mentions import token_aligned, view_id
 
 
 @action_recipe(
@@ -46,6 +46,10 @@ from ..mentions import token_aligned
             optional_title="Use the project's tokenizer",
             description="The tokenizer asset Make tokenizer wrote, the same one the mentions task uses.",
         ),
+        "overlapping": BoolProps(
+            title="Mentions can overlap",
+            description="The same setting as the mentions task's, so the gold mentions are saved in its view.",
+        ),
     },
 )
 def kg_import_gold(
@@ -57,6 +61,7 @@ def kg_import_gold(
     lang: str = "en",
     annotator: str = "gold",
     tokenizer: Optional[Model] = None,
+    overlapping: bool = False,
 ) -> None:
     """Save the gold mentions of the given documents to ``dataset``."""
     graph = kg_schema.load(schema.path)
@@ -66,7 +71,10 @@ def kg_import_gold(
     gold_rows = list(read_jsonl(Path(gold.path)))
     mentions = kg_gold.gold_mentions(gold_rows, by_doc, graph)
     gold_docs = [r["doc_id"] for r in gold_rows if r.get("doc_id") in by_doc]
-    examples = kg_gold.spans_examples(mentions, by_passage, [p["meta"]["passage_id"] for d in gold_docs for p in by_doc[d]])
+    # Every passage of a gold document is gold, those with no mentions too, except the
+    # whole-document passages, which aren't labelled for mentions.
+    passage_ids = [p["meta"]["passage_id"] for d in gold_docs for p in by_doc[d] if not is_whole_document(p)]
+    examples = kg_gold.spans_examples(mentions, by_passage, passage_ids)
     # Hashed like the mentions task's examples: on the passage text alone, before the spans.
     nlp = tokenizer.load() if tokenizer is not None else spacy.blank(lang)
     hashed, widened, dropped = [], 0, 0
@@ -76,7 +84,7 @@ def kg_import_gold(
         widened, dropped = widened + w, dropped + d
         hashed.append({**task, "spans": spans, "answer": "accept", "_annotator_id": annotator, "_session_id": annotator})
     tokenized = list(prodigy.recipes.spans.add_tokens(nlp, hashed))
-    save_examples(dataset.name, tokenized, session_id=annotator, parse_as=SpansManualExample, view_id="spans_manual")
+    save_examples(dataset.name, tokenized, session_id=annotator, parse_as=SpansManualExample, view_id=view_id(overlapping))
     missing = len({r["doc_id"] for r in gold_rows} - set(by_doc))
     msg = (
         f"Saved {len(mentions)} gold mentions in {len(tokenized)} passages to '{dataset.name}' "

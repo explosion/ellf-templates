@@ -36,6 +36,9 @@ from ellf_recipes_sdk import (
     task_recipe,
 )
 
+from ..documents import is_whole_document
+from ..mentions import view_id
+
 
 @task_recipe(
     title="Mentions (knowledge graph)",
@@ -80,14 +83,15 @@ def kg_mentions(
     nlp = tokenizer.load() if tokenizer is not None else spacy.blank(lang)
     scheme = LabelScheme.resolve(label)
     labels = scheme.names()
-    stream = input.load(rehash=True, dedup=True, input_key="text")
+    # Mentions are marked in the passages, not in the whole-document ones that only show pairs.
+    stream = (eg for eg in input.load(rehash=True, dedup=True, input_key="text") if not is_whole_document(eg))
     if patterns is not None:
         matcher = patterns.load(nlp=nlp, label=labels, allow_overlap=overlapping)
         stream = (eg for _, eg in matcher(stream))
     return {
         "dataset": dataset.name,
         "stream": prodigy.recipes.spans.add_tokens(nlp, stream),
-        "view_id": "spans_manual" if overlapping else "ner_manual",
+        "view_id": view_id(overlapping),
         "parse_as": SpansManualExample,
         "exclude": settings.exclude_names,
         "config": settings.prodigy_config(labels=labels, label_definitions=scheme.definitions(), lang=nlp.lang),

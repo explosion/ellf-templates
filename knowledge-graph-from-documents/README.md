@@ -62,7 +62,7 @@ flowchart LR
     cand --> groups[(mention-groups)]
     cand --> q[(link-questions)] --> ltask[links task] --> lrev[links-review] --> lset[(links-settled)]
     lset --> fix[fix-links action] --> fq[(link-questions-fix)] --> ftask[links-fix task] --> frev[links-fix-review] --> fset[(links-fix-settled)]
-    lset & fset --> mk["make-pairs-#lt;group#gt; action"] --> prs[("pairs-#lt;group#gt;")] --> rtask["relations-#lt;group#gt; task"] --> rrev["relations-#lt;group#gt;-review"] --> rset[("relations-#lt;group#gt;-settled")]
+    lset & fset --> mk["make-pairs-relation_group action"] --> prs[("pairs-relation_group")] --> rtask["relations-relation_group task"] --> rrev["relations-relation_group-review"] --> rset[("relations-relation_group-settled")]
     agents[LLM agents] -. label .-> mtask & ltask & ftask & rtask
     mset & groups & lset & fset & rset --> svc[knowledge-graph service]
     rset --> sample[sample-links action] --> chk[link-check task]
@@ -89,11 +89,11 @@ flowchart LR
 | Mention groups | asset (`input`) | mention-groups, mention-groups-eval | written by `link-candidates` | [link-candidates](#link-candidates) |
 | Link questions | asset (`input`) | link-questions, link-questions-eval | written by `link-candidates` | [link-candidates](#link-candidates) |
 | Second-round link questions | asset (`input`) | link-questions-fix | written by `fix-links` | [fix-links](#fix-links) |
-| Relation pairs | asset (`input`) | pairs-`<group>`, pairs-`<group>`-eval, one pair per relation group | written by `make-pairs` | [make-pairs](#make-pairs) |
+| Relation pairs | asset (`input`) | pairs-relation_group, pairs-relation_group-eval, one pair per relation group | written by `make-pairs` | [make-pairs](#make-pairs) |
 | Links to check | asset (`input`) | link-sample | written by `sample-links` | [sample-links](#sample-links) |
 | Scores | asset (`input`) | Scores | written by `scripts/score.py`, optional | [score.py](#scorepy) |
 | Mention labels | asset (`labels`) | Mention labels | from the schema | [labels_from_schema.py](#labels_from_schemapy) |
-| Relation labels | asset (`labels`) | Relation labels (`<group>`), one per relation group | from the schema | [labels_from_schema.py](#labels_from_schemapy) |
+| Relation labels | asset (`labels`) | Relation labels (relation_group), one per relation group | from the schema | [labels_from_schema.py](#labels_from_schemapy) |
 | Link labels | asset (`labels`) | Link labels | template | [assets/link_labels.json](assets/link_labels.json) |
 | Link check labels | asset (`labels`) | Link check labels | template | [assets/link_check_labels.json](assets/link_check_labels.json) |
 | Mention guidelines | asset (`instructions`) | Mention guidelines | template, filled in by you | [assets/mention_guidelines.md](assets/mention_guidelines.md) |
@@ -110,9 +110,9 @@ flowchart LR
 | Gold links | dataset (`review`; `textcat` with Gold labels) | links-gold | created empty | [Datasets](#datasets) |
 | Second-round link answers | dataset (`textcat`) | links-fix | created empty, with `fix-links` | [Datasets](#datasets) |
 | Settled second-round links | dataset (`review`) | links-fix-settled | created empty, with `fix-links` and more than one labeller | [Datasets](#datasets) |
-| Relation answers | dataset (`textcat`) | relations-`<group>`, relations-`<group>`-eval | created empty | [Datasets](#datasets) |
-| Settled relations | dataset (`review`) | relations-`<group>`-settled | created empty, with more than one labeller | [Datasets](#datasets) |
-| Gold relations | dataset (`review`; `textcat` with Gold labels) | relations-`<group>`-gold | created empty | [Datasets](#datasets) |
+| Relation answers | dataset (`textcat`) | relations-relation_group, relations-relation_group-eval | created empty | [Datasets](#datasets) |
+| Settled relations | dataset (`review`) | relations-relation_group-settled | created empty, with more than one labeller | [Datasets](#datasets) |
+| Gold relations | dataset (`review`; `textcat` with Gold labels) | relations-relation_group-gold | created empty | [Datasets](#datasets) |
 | Link checks | dataset (`textcat`) | link-check | created empty | [Datasets](#datasets) |
 | Documents | action (`kg_add_documents`) | add-documents | template | [Actions](#add-documents) |
 | Tokenizer | action (`kg_make_tokenizer`) | make-tokenizer | template | [Actions](#make-tokenizer) |
@@ -120,12 +120,12 @@ flowchart LR
 | Rules and models as labellers | action (`kg_find_mentions`) | find-mentions, find-mentions-eval | template, optional | [Actions](#find-mentions) |
 | Link candidates | action (`kg_link_candidates`) | link-candidates, link-candidates-eval | template | [Actions](#link-candidates) |
 | Second round of links | action (`kg_fix_links`) | fix-links | template, optional | [Actions](#fix-links) |
-| Relation pairs | action (`kg_make_pairs`) | make-pairs-`<group>`, make-pairs-`<group>`-eval | template | [Actions](#make-pairs) |
+| Relation pairs | action (`kg_make_pairs`) | make-pairs-relation_group, make-pairs-relation_group-eval | template | [Actions](#make-pairs) |
 | Links to check | action (`kg_sample_links`) | sample-links | template | [Actions](#sample-links) |
 | Mentions | task (`kg_mentions`) | mentions, mentions-eval | template | [Tasks](#mentions) |
 | Links | task (`textcat`) | links, links-eval, links-fix | template | [Tasks](#links) |
-| Relations | task (`textcat`) | relations-`<group>`, relations-`<group>`-eval | template | [Tasks](#relations) |
-| Reviews | task (`review`) | mentions-review, links-review, links-fix-review, relations-`<group>`-review, and the -eval-review tasks | template | [Tasks](#reviews) |
+| Relations | task (`textcat`) | relations-relation_group, relations-relation_group-eval | template | [Tasks](#relations) |
+| Reviews | task (`review`) | mentions-review, links-review, links-fix-review, relations-relation_group-review, and the -eval-review tasks | template | [Tasks](#reviews) |
 | Link check | task (`textcat`) | link-check | template | [Tasks](#link-check) |
 | LLM labellers | agent (`gemini_agent`, or any agent recipe) | smaller-llm, larger-llm | template, optional | [Agents](#agents) |
 | Graph | service (`kg_graph`) | knowledge-graph | template | [Services](#knowledge-graph) |
@@ -134,8 +134,10 @@ flowchart LR
 | Label schemes from the schema | script | labels_from_schema.py | template | [Scripts](#labels_from_schemapy) |
 | Plan | plan | project_plan | template | [`plans/project_plan.md`](plans/project_plan.md) |
 
-Everything marked `<group>` comes once per relation group in the schema, with the group's
-name in lower case (as `labels_from_schema.py` prints it) in place of `<group>`.
+The commands use the skeleton schema's one relation group, `RELATION_GROUP`. Everything named
+after it comes once per relation group in your schema: `RELATION_GROUP` is the group's name as
+the schema writes it (`--relation`), and `relation_group` the same in lower case, as
+`labels_from_schema.py` prints it, in every asset, dataset and job name.
 
 The jobs use the built-in recipes `textcat`, `review` and `gemini_agent` (or another
 agent recipe), and ten custom recipes from the package: the actions `kg_add_documents`,
@@ -175,9 +177,10 @@ and the service `kg_graph`.
   ```
 
 - **Gold labels (optional):** if your documents come with them, e.g. a shared task. One
-  row per document; `passage` is the passage's index in that document, a mention with no
-  `ids` is NIL, and a relation's `passage` can be left out when its group's scope is the
-  whole document. Without gold labels, the evaluation tasks make them.
+  row per document; `passage` is the passage's index in that document, counting only the
+  passages that have text (`add-documents` drops empty ones), a mention with no `ids` is
+  NIL, and a relation's `passage` can be left out when its group's scope is the whole
+  document. Without gold labels, the evaluation tasks make them.
 
   ```json
   {"doc_id": "D1", "mentions": [{"passage": 0, "start": 10, "end": 18, "type": "TYPE_A", "ids": ["E1"]}], "relations": [{"label": "LABEL_ONE", "head": "E1", "tail": "E2", "passage": 0}]}
@@ -196,6 +199,9 @@ and the service `kg_graph`.
   is listed with it.
 - **People** to pilot each task and to label the evaluation documents, assigned with
   `ellf users assign "<email>" --task <task>`, and someone to settle the reviews.
+- **For the service:** internet access from the cluster on its first start, to download
+  Java and Neo4j Community (checked against pinned checksums, then kept on the cluster's
+  shared storage), and an x64 (amd64) node, since the pinned Java build is x64 only.
 
 The template includes no data.
 
@@ -311,7 +317,7 @@ python scripts/labels_from_schema.py config/graph_schema.json assets/
 ellf publish data config/graph_schema.json --kind input --name "Graph schema" --version 1.0.0
 ellf publish data config/questions.json --kind input --name "Questions" --version 1.0.0
 ellf publish data assets/mention_labels.json --kind labels --name "Mention labels" --version 1.0.0
-ellf publish data assets/relation_labels_<group>.json --kind labels --name "Relation labels (<group>)" --version 1.0.0
+ellf publish data assets/relation_labels_relation_group.json --kind labels --name "Relation labels (relation_group)" --version 1.0.0
 ellf publish data assets/link_labels.json --kind labels --name "Link labels" --version 1.0.0
 ellf publish data assets/link_check_labels.json --kind labels --name "Link check labels" --version 1.0.0
 ellf publish data assets/mention_guidelines.md --kind instructions --name "Mention guidelines" --version 1.0.0
@@ -329,7 +335,7 @@ ellf publish data <your gold labels>.jsonl --kind input --name "Gold labels" --v
 ellf publish data <your patterns>.jsonl --kind patterns --name "Mention patterns" --version 1.0.0
 ```
 
-Publish one relation label scheme per group, as "Relation labels (`<group>`)".
+Publish one relation label scheme per relation group, as "Relation labels (<group in lower case>)".
 
 ### Datasets
 
@@ -345,10 +351,10 @@ check) has a dataset for each of these roles it needs:
 
 | Role | Needed when | Read by | Names in the commands below |
 |---|---|---|---|
-| Answers | always: the component's labellers write here | its review, or the later steps when there's no review | mentions, links, links-fix, relations-`<group>`, link-check |
-| Settled answers | the component has more than one labeller, so a review picks one answer per example | the later steps and the service | mentions-settled, links-settled, links-fix-settled, relations-`<group>`-settled |
-| Evaluation answers | the component's labellers are scored on the evaluation documents | `score.py`, and the evaluation review | mentions-eval, links-eval, relations-`<group>`-eval |
-| Gold | the component is scored, or the gold graph is built | `link-candidates-eval`, `make-pairs-eval`, `score.py`, the gold service | mentions-gold, links-gold, relations-`<group>`-gold |
+| Answers | always: the component's labellers write here | its review, or the later steps when there's no review | mentions, links, links-fix, relations-relation_group, link-check |
+| Settled answers | the component has more than one labeller, so a review picks one answer per example | the later steps and the service | mentions-settled, links-settled, links-fix-settled, relations-relation_group-settled |
+| Evaluation answers | the component's labellers are scored on the evaluation documents | `score.py`, and the evaluation review | mentions-eval, links-eval, relations-relation_group-eval |
+| Gold | the component is scored, or the gold graph is built | `link-candidates-eval`, `make-pairs-eval`, `score.py`, the gold service | mentions-gold, links-gold, relations-relation_group-gold |
 
 Every person assigned to a task counts as a labeller, and so does each agent and each
 method `find-mentions` runs. Which roles a component can do without:
@@ -358,7 +364,7 @@ method `find-mentions` runs. Which roles a component can do without:
 - **A Gold labels asset:** `import-gold`, `link-candidates-eval --gold-links` and
   `make-pairs-eval --gold-relations` fill the gold datasets, so there are no evaluation
   reviews, and the gold datasets take those actions' kinds: `spans` for mentions-gold,
-  `textcat` for links-gold and relations-`<group>`-gold. Evaluation answers are only
+  `textcat` for links-gold and relations-relation_group-gold. Evaluation answers are only
   needed for the labellers being compared.
 - **No gold labels:** the evaluation reviews settle the evaluation answers into the gold
   datasets.
@@ -375,11 +381,19 @@ ellf datasets create links-settled --kind review
 ellf datasets create links-gold --kind review
 ellf datasets create links-fix --kind textcat
 ellf datasets create links-fix-settled --kind review
-ellf datasets create relations-<group> --kind textcat
-ellf datasets create relations-<group>-eval --kind textcat
-ellf datasets create relations-<group>-settled --kind review
-ellf datasets create relations-<group>-gold --kind review
+ellf datasets create relations-relation_group --kind textcat
+ellf datasets create relations-relation_group-eval --kind textcat
+ellf datasets create relations-relation_group-settled --kind review
+ellf datasets create relations-relation_group-gold --kind review
 ellf datasets create link-check --kind textcat
+```
+
+With a Gold labels asset, create the gold datasets with the kinds the actions write instead:
+
+```bash
+ellf datasets create mentions-gold --kind spans
+ellf datasets create links-gold --kind textcat
+ellf datasets create relations-relation_group-gold --kind textcat
 ```
 
 The commands below use every role, under these names. Leave out the datasets and jobs the
@@ -419,8 +433,11 @@ ellf actions create kg_make_tokenizer --name make-tokenizer --tokenizer.name "to
 ### import-gold
 
 Optional, when your documents come with gold labels: saves the gold mentions of the
-evaluation documents to `mentions-gold`. Gold links and relations stay in the Gold
-labels asset, which `make-pairs-eval` and `score.py` read.
+evaluation documents to `mentions-gold`, every passage of a gold document included, those
+with no mentions too. Gold links and relations stay in the Gold labels asset, which
+`link-candidates-eval` and `make-pairs-eval` save to `links-gold` and the relations gold
+datasets. Add `--overlapping` if the mentions tasks use it, so the gold is saved in the
+same view.
 
 **Create after:** `add-documents` and `make-tokenizer` have run.
 
@@ -462,8 +479,12 @@ or `import-gold` has filled `mentions-gold`, for the evaluation run).
 
 ```bash
 ellf actions create kg_link_candidates --name link-candidates --documents "documents" --mentions mentions-settled --entity-list "Entity list" --schema "Graph schema" --questions.name "link-questions" --groups.name "mention-groups" --no-start
-ellf actions create kg_link_candidates --name link-candidates-eval --documents "documents-eval" --mentions mentions-gold --entity-list "Entity list" --schema "Graph schema" --questions.name "link-questions-eval" --groups.name "mention-groups-eval" --no-start
+ellf actions create kg_link_candidates --name link-candidates-eval --documents "documents-eval" --mentions mentions-gold --entity-list "Entity list" --schema "Graph schema" --questions.name "link-questions-eval" --groups.name "mention-groups-eval" --ask-all --no-start
 ```
+
+`--ask-all` asks about the groups the rule links too, on the evaluation documents only:
+their gold answers are what the rule, the baseline, is scored against. Groups with no
+candidate get no question; with gold made in the reviews, their gold is NIL.
 
 With a Gold labels asset, add `--gold "Gold labels" --gold-links links-gold` to the
 evaluation run: it saves the gold links as answers to every group's candidates, a yes of
@@ -473,6 +494,7 @@ same shape the reviews would, and the gold graph below can be built.
 
 | Argument | Value | Notes |
 |---|---|---|
+| `--ask-all` | on for the evaluation run | also ask about the groups a single exact match links |
 | `--broader` | off | for mentions no name matches exactly, also offer the broader entries of the candidates found (the list's `broader` field) |
 | `--llm-api-key` | gemini-api-key | optional: for mentions no name matches exactly, an LLM proposes up to 5 names the entry could be listed under, which are looked up too. Each such mention, its type and about 600 characters around it are sent to the provider; the log gives the calls and tokens |
 | `--llm-model`, `--llm-url` | gemini-3.8-flash, Gemini's endpoint | any OpenAI-compatible chat completions endpoint |
@@ -514,19 +536,21 @@ linking errors.
 settled the links, and, for the evaluation run, the gold labels exist.
 
 ```bash
-ellf actions create kg_make_pairs --name make-pairs-<group> --documents "documents" --mentions mentions-settled --groups "mention-groups" --links links-settled,links-fix-settled --entity-list "Entity list" --schema "Graph schema" --relation <GROUP> --pairs.name "pairs-<group>" --no-start
-ellf actions create kg_make_pairs --name make-pairs-<group>-eval --documents "documents-eval" --gold "Gold labels" --gold-relations relations-<group>-gold --entity-list "Entity list" --schema "Graph schema" --relation <GROUP> --pairs.name "pairs-<group>-eval" --no-start
+ellf actions create kg_make_pairs --name make-pairs-relation_group --documents "documents" --mentions mentions-settled --groups "mention-groups" --links links-settled,links-fix-settled --entity-list "Entity list" --schema "Graph schema" --relation RELATION_GROUP --pairs.name "pairs-relation_group" --no-start
+ellf actions create kg_make_pairs --name make-pairs-relation_group-eval --documents "documents-eval" --gold "Gold labels" --gold-relations relations-relation_group-gold --entity-list "Entity list" --schema "Graph schema" --relation RELATION_GROUP --pairs.name "pairs-relation_group-eval" --no-start
 ```
 
-Once per relation group: `<GROUP>` is its name as the schema writes it, `<group>` the same
-in lower case. `--gold-relations` saves each pair's gold label, NONE included, to
-`relations-<group>-gold`.
+Once per relation group, with the group's name in place of `RELATION_GROUP` and
+`relation_group`. `--gold-relations` saves each pair's gold label, NONE included, to
+`relations-relation_group-gold`, and the log says how many of the group's gold relations are
+among the pairs: the rest (an entity dropped as NIL, a passage-scope relation with no
+passage) can't be labelled by anyone.
 Without a Gold labels asset, `make-pairs-eval` reads the gold datasets instead, and the
-evaluation pairs are labelled in `relations-<group>-eval` and settled into the gold
-dataset by `relations-<group>-eval-review`:
+evaluation pairs are labelled in `relations-relation_group-eval` and settled into the gold
+dataset by `relations-relation_group-eval-review`:
 
 ```bash
-ellf actions create kg_make_pairs --name make-pairs-<group>-eval --documents "documents-eval" --mentions mentions-gold --groups "mention-groups-eval" --links links-gold --entity-list "Entity list" --schema "Graph schema" --relation <GROUP> --pairs.name "pairs-<group>-eval" --no-start
+ellf actions create kg_make_pairs --name make-pairs-relation_group-eval --documents "documents-eval" --mentions mentions-gold --groups "mention-groups-eval" --links links-gold --entity-list "Entity list" --schema "Graph schema" --relation RELATION_GROUP --pairs.name "pairs-relation_group-eval" --no-start
 ```
 
 ### sample-links
@@ -534,10 +558,10 @@ ellf actions create kg_make_pairs --name make-pairs-<group>-eval --documents "do
 Draws a random sample of the graph's links per relation label, grouped by document,
 with the passages behind each, for the link-check task.
 
-**Create after:** the `relations-<group>-review` tasks have settled the relations.
+**Create after:** the `relations-relation_group-review` tasks have settled the relations.
 
 ```bash
-ellf actions create kg_sample_links --name sample-links --schema "Graph schema" --documents "documents" --entity-list "Entity list" --groups "mention-groups" --mentions mentions-settled --links links-settled,links-fix-settled --relations relations-<group>-settled --per-label 50 --sample.name "link-sample" --no-start
+ellf actions create kg_sample_links --name sample-links --schema "Graph schema" --documents "documents" --entity-list "Entity list" --groups "mention-groups" --mentions mentions-settled --links links-settled,links-fix-settled --relations relations-relation_group-settled --per-label 50 --sample.name "link-sample" --no-start
 ```
 
 ## Tasks
@@ -582,14 +606,14 @@ ellf tasks create textcat --name links-fix --dataset links-fix --input "link-que
 ### relations
 
 One question per pair: which relation the passage states between the two marked
-entities, or NONE. `relations-<group>-eval` labels the evaluation pairs, blind. Once per
+entities, or NONE. `relations-relation_group-eval` labels the evaluation pairs, blind. Once per
 relation group.
 
-**Create after:** `make-pairs-<group>` (or `make-pairs-<group>-eval`) has run.
+**Create after:** `make-pairs-relation_group` (or `make-pairs-relation_group-eval`) has run.
 
 ```bash
-ellf tasks create textcat --name relations-<group> --dataset relations-<group> --input "pairs-<group>" --label-scheme "Relation labels (<group>)" --labels-exclusive --settings.config "$(cat config/textcat_prodigy.json)" --settings.goal overlap --settings.instructions "Relation guidelines" --no-start
-ellf tasks create textcat --name relations-<group>-eval --dataset relations-<group>-eval --input "pairs-<group>-eval" --label-scheme "Relation labels (<group>)" --labels-exclusive --settings.config "$(cat config/textcat_prodigy.json)" --settings.goal overlap --settings.instructions "Relation guidelines" --no-start
+ellf tasks create textcat --name relations-relation_group --dataset relations-relation_group --input "pairs-relation_group" --label-scheme "Relation labels (relation_group)" --labels-exclusive --settings.config "$(cat config/textcat_prodigy.json)" --settings.goal overlap --settings.instructions "Relation guidelines" --no-start
+ellf tasks create textcat --name relations-relation_group-eval --dataset relations-relation_group-eval --input "pairs-relation_group-eval" --label-scheme "Relation labels (relation_group)" --labels-exclusive --settings.config "$(cat config/textcat_prodigy.json)" --settings.goal overlap --settings.instructions "Relation guidelines" --no-start
 ```
 
 `--labels-exclusive` gives one answer per pair. Leave it out for a group whose schema
@@ -612,10 +636,10 @@ with the rest of the setup.
 ellf tasks create review --name mentions-review --auto-accept --dataset mentions-settled --datasets mentions --no-start
 ellf tasks create review --name links-review --auto-accept --dataset links-settled --datasets links --no-start
 ellf tasks create review --name links-fix-review --auto-accept --dataset links-fix-settled --datasets links-fix --no-start
-ellf tasks create review --name relations-<group>-review --auto-accept --dataset relations-<group>-settled --datasets relations-<group> --no-start
+ellf tasks create review --name relations-relation_group-review --auto-accept --dataset relations-relation_group-settled --datasets relations-relation_group --no-start
 ellf tasks create review --name mentions-eval-review --auto-accept --dataset mentions-gold --datasets mentions-eval --no-start
 ellf tasks create review --name links-eval-review --auto-accept --dataset links-gold --datasets links-eval --no-start
-ellf tasks create review --name relations-<group>-eval-review --auto-accept --dataset relations-<group>-gold --datasets relations-<group>-eval --no-start
+ellf tasks create review --name relations-relation_group-eval-review --auto-accept --dataset relations-relation_group-gold --datasets relations-relation_group-eval --no-start
 ```
 
 ### link-check
@@ -697,7 +721,7 @@ JSON lines, with provenance). Every query is read-only.
 a service's arguments are fixed when it's created; restart it to pick up new answers.
 
 ```bash
-ellf services create kg_graph --name knowledge-graph --schema "Graph schema" --questions "Questions" --documents "documents,documents-eval" --entity-list "Entity list" --groups "mention-groups" --mentions mentions-settled --links links-settled,links-fix-settled --relations relations-<group>-settled --relations-labelled relations-<group> --no-start
+ellf services create kg_graph --name knowledge-graph --schema "Graph schema" --questions "Questions" --documents "documents,documents-eval" --entity-list "Entity list" --groups "mention-groups" --mentions mentions-settled --links links-settled,links-fix-settled --relations relations-relation_group-settled --relations-labelled relations-relation_group --no-start
 ```
 
 `--relations` and `--relations-labelled` take every relation group's dataset,
@@ -710,7 +734,7 @@ documents: the reference that the graph's precision and recall are measured agai
 (see [Evaluating the whole graph](#evaluating-the-whole-graph)).
 
 ```bash
-ellf services create kg_graph --name knowledge-graph-gold --schema "Graph schema" --questions "Questions" --documents "documents-eval" --entity-list "Entity list" --groups "mention-groups-eval" --mentions mentions-gold --links links-gold --relations relations-<group>-gold --no-start
+ellf services create kg_graph --name knowledge-graph-gold --schema "Graph schema" --questions "Questions" --documents "documents-eval" --entity-list "Entity list" --groups "mention-groups-eval" --mentions mentions-gold --links links-gold --relations relations-relation_group-gold --no-start
 ```
 
 | Argument | Value | Notes |
@@ -722,7 +746,7 @@ ellf services create kg_graph --name knowledge-graph-gold --schema "Graph schema
 
 ### labels_from_schema.py
 
-Writes `assets/mention_labels.json` and one `assets/relation_labels_<group>.json` per
+Writes `assets/mention_labels.json` and one `assets/relation_labels_relation_group.json` per
 relation group from the schema, so the label schemes never drift from it.
 
 ```bash
@@ -731,27 +755,38 @@ python scripts/labels_from_schema.py config/graph_schema.json assets/
 
 ### score.py
 
-Scores every labeller of every component against the gold labels, and the finished
-graph, with 95% intervals, and writes `scores.json`. It needs only Python's standard
-library. For linking it also reports, per entity type, which candidate source found each
-right entry, how many names have different gold entries per mention (what `fix-links`
-splits), and examples of mentions whose right entry no source found.
+Scores every labeller of every component against the gold datasets, and the finished
+graph against the gold graph, with 95% intervals, and writes `scores.json`. It needs only
+Python's standard library. The gold is always the gold datasets, whether the evaluation
+reviews settled them or the actions filled them from a Gold labels asset: both write the
+same shape. For linking it also reports, per entity type, which candidate source found
+each right entry, how many names have different gold entries per mention (what
+`fix-links` splits), and examples of mentions whose right entry no source found.
 
 ```bash
-ellf datasets export mentions-gold --output mentions-gold.jsonl
-ellf datasets export mentions-eval --output mentions-eval.jsonl
+for d in mentions-gold mentions-eval links-gold links-eval relations-relation_group-gold relations-relation_group-eval link-check; do
+  ellf datasets export $d --output $d.jsonl
+done
 python scripts/score.py mentions --gold mentions-gold.jsonl --answers mentions-eval.jsonl
-python scripts/score.py linking --groups mention-groups-eval.jsonl --gold gold.jsonl --answers links-eval.jsonl
-python scripts/score.py relations --schema config/graph_schema.json --pairs pairs-eval.jsonl --gold relations-gold.jsonl --answers relations-eval.jsonl
+python scripts/score.py linking --groups mention-groups-eval.jsonl --gold links-gold.jsonl --answers links-eval.jsonl
+python scripts/score.py relations --schema config/graph_schema.json --pairs pairs-relation_group-eval.jsonl --gold relations-relation_group-gold.jsonl --answers relations-relation_group-eval.jsonl
 python scripts/score.py links --answers link-check.jsonl
-python scripts/score.py graph --schema config/graph_schema.json --export graph.jsonl --gold gold.jsonl
+python scripts/score.py compare --graph graph-relations.jsonl --gold-graph graph-gold.jsonl
 python scripts/score.py questions --questions config/questions.json --answers answers/
 ellf publish data scores.json --kind input --name "Scores" --version 1.0.0
 ```
 
-The assets come from the cluster with `ellf files cp "<path from ellf assets info>" .`,
-`graph.jsonl` from the service's `api/export`, and `answers/<name>.json` from its
-`api/questions/<name>`, one file per question.
+The assets (`mention-groups-eval.jsonl`, `pairs-relation_group-eval.jsonl`) come from the
+cluster with `ellf files cp "<path from ellf assets info>" .`, `graph-gold.jsonl` from the
+`knowledge-graph-gold` service's `api/export`, `graph-relations.jsonl` from `build_graph.py`
+below, and `answers/<name>.json` from the service's `api/questions/<name>`, one file per
+question. `compare` gives the graph's recall per relation label, which the service shows
+beside the link check's precision.
+
+Gold settled in the reviews can only say yes to a candidate, so a name whose right entry
+no source found is NIL there: the link guidelines ask the reviewer to flag those, and
+`score.py linking` counts the flagged ones. A Gold labels asset has every right entry, so
+its candidate recall is the real one.
 
 ### build_graph.py
 
@@ -760,7 +795,7 @@ it, and writes it in the format of `api/export`. It needs only Python's standard
 Add `:<labeller>` to an export to keep only that labeller's answers.
 
 ```bash
-python scripts/build_graph.py --schema config/graph_schema.json --entity-list entity_list.jsonl --documents documents-eval.jsonl --groups mention-groups-eval.jsonl --mentions mentions-gold.jsonl --links links-gold.jsonl --relations relations-<group>-eval.jsonl:<labeller> --out graph-relations.jsonl
+python scripts/build_graph.py --schema config/graph_schema.json --entity-list entity_list.jsonl --documents documents-eval.jsonl --groups mention-groups-eval.jsonl --mentions mentions-gold.jsonl --links links-gold.jsonl --relations relations-relation_group-eval.jsonl:<labeller> --out graph-relations.jsonl
 python scripts/score.py compare --graph graph-relations.jsonl --gold-graph graph-gold.jsonl
 ```
 
@@ -787,6 +822,9 @@ labeller's links in after the pairs exist changes nothing.
   questions (`links-eval`). Run `make-pairs-eval` again with `--mentions mentions-gold
   --groups mention-groups-eval --links links-eval` and new output names, label the new
   pairs, and build with those links and answers. This adds the linking step's losses.
+  `make-pairs` takes every labeller's yes answers in `links-eval` together, so this
+  measures the labellers' links combined; to measure one linker, give it its own links
+  dataset, or settle `links-eval` in a review first, as the documents to label are.
 - **From mentions on:** the same, starting from the evaluation mentions settled as the
   documents to label are: the whole method on the evaluation documents, and the closest
   measure of the real graph's recall.
@@ -808,4 +846,4 @@ you).
 
 ---
 
-*Exported: 2026-11-16T13:20:10Z &middot; Template format: 1 &middot; Ellf CLI: 24.0.0 &middot; Recipe packages: ellf-recipes 0.18.47, kg-recipes 0.2.10 &middot; Exported with: Claude Code 2.1.314 (claude-opus-5-5)*
+*Exported: 2026-11-16T13:20:10Z &middot; Template format: 1 &middot; Ellf CLI: 24.0.0 &middot; Recipe packages: ellf-recipes 0.18.47, kg-recipes 0.2.11 &middot; Exported with: Claude Code 2.1.314 (claude-opus-5-5)*

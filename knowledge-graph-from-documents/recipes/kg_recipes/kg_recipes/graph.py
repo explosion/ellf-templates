@@ -216,9 +216,10 @@ class Neo4j:
             raise Neo4jError("; ".join(err.get("message", str(err)) for err in result["errors"]))
         return [{"columns": r["columns"], "rows": [d["row"] for d in r["data"]]} for r in result["results"]]
 
-    def query(self, statement: str, read_only: bool = True, **params: Any) -> List[dict]:
-        """Run one statement and return its rows as dicts."""
-        result = self.run([(statement, params)], read_only=read_only)[0]
+    def query(self, statement: str, params: Optional[Dict[str, Any]] = None, *, read_only: bool = True, **kwargs: Any) -> List[dict]:
+        """Run one statement and return its rows as dicts. Parameters that come from a
+        request go in ``params``, so they can't set ``read_only``."""
+        result = self.run([(statement, {**(params or {}), **kwargs})], read_only=read_only)[0]
         return [dict(zip(result["columns"], row)) for row in result["rows"]]
 
 

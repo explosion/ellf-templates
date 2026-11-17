@@ -68,6 +68,10 @@ SUBDIR = "kg_recipes"
                 "and those are looked up too. The mention, its type and the text around it are sent to the provider."
             ),
         ),
+        "ask_all": BoolProps(
+            title="Ask about every group",
+            description="Also ask about the groups a single exact match links: for the evaluation documents, so the gold labels cover them and the rule is scored.",
+        ),
         "llm_model": TextProps(title="LLM model", description="The model that proposes names."),
         "llm_url": TextProps(title="LLM API URL", description="Any OpenAI-compatible chat completions endpoint. The default is Gemini's."),
         "context": IntProps(
@@ -103,6 +107,7 @@ def kg_link_candidates(
     gold: Optional[Input] = None,
     gold_links: Optional[Dataset[Literal["textcat"]]] = None,
     broader: bool = False,
+    ask_all: bool = False,
     llm_api_key: Optional[Secret] = None,
     llm_model: str = kg_llm.DEFAULT_MODEL,
     llm_url: str = kg_llm.DEFAULT_URL,
@@ -126,7 +131,7 @@ def kg_link_candidates(
         propose = kg_llm.proposer(llm, lambda g, context, n: linking.proposal_prompt(g, graph.entity_types[g.type], context, n))
     contexts = {g.group_id: linking.context_of(g, by_passage) for g in mention_groups} if propose else None
     linking.add_candidates(mention_groups, entities, graph, propose=propose, broader=broader, contexts=contexts)
-    question_rows = linking.question_rows(mention_groups, entities, by_passage, version, context=context)
+    question_rows = linking.question_rows(mention_groups, entities, by_passage, version, always=ask_all, context=context)
     group_rows = linking.group_rows(mention_groups, version)
     for output, out_rows in ((questions, question_rows), (groups, group_rows)):
         path = output.local_path(f"{SUBDIR}/{output.name}.jsonl")
@@ -149,7 +154,7 @@ def kg_link_candidates(
     decided = Counter("rule" if g["rule_ids"] else ("nil" if g["rule_ids"] == [] else "ask") for g in group_rows)
     msg = (
         f"{len(found)} mentions in {len(group_rows)} groups: {decided['rule']} linked by rule, "
-        f"{decided['nil']} with no candidate (NIL), {decided['ask']} to ask about in "
+        f"{decided['nil']} with no candidate (NIL), {'every group with a candidate' if ask_all else decided['ask']} to ask about in "
         f"{len(question_rows)} yes/no questions."
     )
     sources = Counter(c.match for g in mention_groups for c in g.candidates)
