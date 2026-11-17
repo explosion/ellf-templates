@@ -319,7 +319,7 @@ async function status() {
   setAsk(s.plain_language);
   const failed = (s.checks || []).filter((c) => c.count || c.error);
   if (failed.length) {
-    $("checks").innerHTML = `<div class="banner"><b>${failed.length} of ${s.checks.length} checks failed.</b> The questions and the API stay closed until they pass.` +
+    $("checks").innerHTML = `<div class="banner"><b>${failed.length} of ${s.checks.length} checks failed.</b> The questions and the export stay closed until they pass; search, the entities and their links, and Query and API stay open, to look into what the checks found.` +
       failed.map((c) => `<p><b>${esc(c.name)}</b> ${esc(c.description)}${c.error ? `<br>${esc(c.error)}` : ""}</p>${c.rows && c.rows.length ? table(c.rows) : ""}`).join("") + "</div>";
   } else if (s.checks && s.checks.length) {
     $("checks").innerHTML = `<details class="banner ok small"><summary>${s.checks.length === 1 ? "The check passes" : `All ${s.checks.length} checks pass`}</summary>${s.checks.map((c) => `<div>${esc(c.name)}: <span class="muted">${esc(c.description)}</span></div>`).join("")}</details>`;
@@ -483,7 +483,8 @@ const ROUTES = [
   ["GET", "api/link/<id>", "A link and the passages behind it, with each labeller's answer"],
   ["POST", "api/cypher", 'A read-only query: {"query": "...", "params": {}}'],
   ["POST", "api/subgraph", 'Entities and every link between them: {"ids": ["...", "..."]}'],
-  ["GET", "api/export", "The whole graph as JSON lines: entities, links and evidence"],
+  ["GET", "api/export", "The whole graph as JSON lines: entities, documents, passages, mentions, evidence and links"],
+  ["GET", "api/export?format=cypher", "The whole graph as a Cypher script, to load into an empty Neo4j database"],
 ];
 $("api").innerHTML = "<tr><th>Method</th><th>URL</th><th>Returns</th></tr>" + ROUTES.map(([m, p, d]) => `<tr><td>${m}</td><td><code>${esc(base + p)}</code></td><td>${esc(d)}</td></tr>`).join("");
 

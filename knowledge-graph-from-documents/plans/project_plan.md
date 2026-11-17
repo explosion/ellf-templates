@@ -170,8 +170,9 @@ all label.
 @@Services/knowledge-graph@@ runs Neo4j inside the service, so the graph lives on
 your cluster and nowhere else. It's created with the schema, the questions file, the
 document assets and the settled datasets. On every start it rebuilds the graph from
-them and runs the checks; while a check returns rows, the questions and the API answer
-with the failed checks instead of the graph. A
+them and runs the checks; while a check returns rows, the questions and the export
+answer with the failed checks instead of the graph, and search, the entity and link
+views and read-only Cypher stay open to look into what the checks found. A
 service's arguments are fixed when it's created, so new documents or datasets mean
 creating it again.
 
@@ -199,7 +200,9 @@ The results of the checks are shown above the tabs.
 - run a named question with parameters;
 - run read-only Cypher;
 - read a node with its neighbours, or a link with its evidence;
-- export the graph, nodes and links with their provenance, as JSON lines.
+- export the graph with its provenance (documents, passages, mentions, links and the
+  evidence behind them) as JSON lines, or as a Cypher script that loads it into another
+  Neo4j.
 
 Every request is read-only: Neo4j listens only inside the service, and writes are
 refused.

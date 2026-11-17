@@ -1,5 +1,6 @@
 """Build the graph locally from exported datasets, the way the knowledge-graph service builds
-it, and write it in the format of the service's `api/export`.
+it, and write it in the format of the service's `api/export`: JSON lines, or a Cypher
+script that loads it into a Neo4j when `--out` ends in `.cypher`.
 
 Use it for the graphs the service isn't created for: the graph the labellers' answers
 make on the evaluation documents, and the gold graph with one component's gold swapped
@@ -70,11 +71,9 @@ def main() -> None:
                 relations=names["relations"],
             )
         )
+    write = graph.cypher_script if args.out.endswith(".cypher") else graph.export_lines
     with open(args.out, "w", encoding="utf-8") as f:
-        for e in rows.entities:
-            f.write(json.dumps({"kind": "entity", **e}) + "\n")
-        for link in rows.links:
-            f.write(json.dumps({"kind": "link", **{k: v for k, v in link.items() if k != "ends"}}) + "\n")
+        f.writelines(write(rows))
     print(f"{rows.summary()}. Wrote {args.out}.")
 
 

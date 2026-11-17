@@ -15,7 +15,7 @@ import urllib.error
 import urllib.request
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple
 
 from . import linking
 from . import pairs as kg_pairs
@@ -223,8 +223,8 @@ class Neo4j:
         return [dict(zip(result["columns"], row)) for row in result["rows"]]
 
 
-SETUP = [
-    "MATCH (n) DETACH DELETE n",
+CLEAR = "MATCH (n) DETACH DELETE n"
+INDEXES = [
     "CREATE INDEX entity_id IF NOT EXISTS FOR (e:Entity) ON (e.id)",
     "CREATE INDEX document_id IF NOT EXISTS FOR (d:Document) ON (d.doc_id)",
     "CREATE INDEX passage_id IF NOT EXISTS FOR (p:Passage) ON (p.passage_id)",
@@ -255,23 +255,79 @@ LINK = (
     "CREATE (h)-[:`{label}` {{id: r.id, group: r.group, evidence: r.evidence, conditions: r.conditions, "
     "doc_versions: r.doc_versions, first_date: r.first_date, last_date: r.last_date, methods: r.methods}}]->(t)"
 )
+#: A relationship index belongs to one type, so each label gets its own, for the link view.
+LINK_INDEX = "CREATE INDEX `link_{label}` IF NOT EXISTS FOR ()-[r:`{label}`]-() ON (r.id)"
+
+
+def statements(rows: GraphRows) -> Iterator[Tuple[str, Optional[dict]]]:
+    """The statements that load ``rows`` into an empty database, each with its parameters:
+    the indexes, then the nodes and links in batches of ``$rows``."""
+    by_label: Dict[str, List[dict]] = defaultdict(list)
+    for link in rows.links:
+        by_label[link["label"]].append(link)
+    for statement in INDEXES + [LINK_INDEX.replace("{label}", label) for label in by_label]:
+        yield statement, None
+    for name, statement in LOADS:
+        items = getattr(rows, name)
+        for i in range(0, len(items), BATCH):
+            yield statement, {"rows": items[i : i + BATCH]}
+    for label, items in by_label.items():
+        statement = LINK.replace("{label}", label).replace("{{", "{").replace("}}", "}")
+        for i in range(0, len(items), BATCH):
+            yield statement, {"rows": items[i : i + BATCH]}
 
 
 def load(db: Neo4j, rows: GraphRows) -> None:
     """Replace everything in the database with ``rows``."""
-    for statement in SETUP:
-        db.run([(statement, None)])
-    for name, statement in LOADS:
-        items = getattr(rows, name)
-        for i in range(0, len(items), BATCH):
-            db.run([(statement, {"rows": items[i : i + BATCH]})])
-    by_label: Dict[str, List[dict]] = defaultdict(list)
-    for link in rows.links:
-        by_label[link["label"]].append(link)
-    for label, items in by_label.items():
-        statement = LINK.replace("{label}", label).replace("{{", "{").replace("}}", "}")
-        for i in range(0, len(items), BATCH):
-            db.run([(statement, {"rows": items[i : i + BATCH]})])
+    db.run([(CLEAR, None)])
+    for statement, params in statements(rows):
+        db.run([(statement, params)])
+
+
+def export_lines(rows: GraphRows) -> Iterator[str]:
+    """The graph as JSON lines, one per node, link and piece of evidence, each with its
+    ``kind``: the format of the service's ``api/export``. A passage's own kind (paragraph,
+    table row) is its ``passage_kind``."""
+    passages = ({("passage_kind" if k == "kind" else k): v for k, v in p.items()} for p in rows.passages)
+    for kind, items in (
+        ("entity", rows.entities),
+        ("document", rows.documents),
+        ("passage", passages),
+        ("mention", rows.mentions),
+        ("evidence", rows.evidence),
+        ("link", rows.links),
+    ):
+        for item in items:
+            yield json.dumps({"kind": kind, **item}, ensure_ascii=False) + "\n"
+
+
+def cypher_value(value: Any) -> str:
+    """``value`` as a Cypher literal."""
+    if value is None:
+        return "null"
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float)):
+        return repr(value)
+    if isinstance(value, str):
+        # JSON's string escapes are all valid in a double-quoted Cypher string.
+        return json.dumps(value, ensure_ascii=False)
+    if isinstance(value, (list, tuple)):
+        return "[" + ", ".join(cypher_value(v) for v in value) + "]"
+    if isinstance(value, dict):
+        return "{" + ", ".join(f"`{k}`: {cypher_value(v)}" for k, v in value.items()) + "}"
+    raise TypeError(f"Can't write {type(value).__name__} as Cypher: {value!r}")
+
+
+def cypher_script(rows: GraphRows) -> Iterator[str]:
+    """The graph as a Cypher script that loads it into another Neo4j, e.g. with
+    ``cypher-shell -f graph.cypher``. It adds to what the database holds, so load it into an
+    empty one."""
+    yield "// The knowledge graph, with the evidence behind every link. Load it into an empty database.\n"
+    for statement, params in statements(rows):
+        if params is not None:
+            statement = statement.replace("$rows", cypher_value(params["rows"]), 1)
+        yield statement + ";\n"
 
 
 def run_checks(db: Neo4j, schema: Schema) -> List[dict]:

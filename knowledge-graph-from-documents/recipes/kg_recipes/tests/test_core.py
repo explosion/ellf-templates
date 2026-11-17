@@ -437,3 +437,97 @@ def test_rows_with_the_same_text_are_told_apart():
 
     rows = [{"text": "Q", "meta": {"passage_id": p}} for p in ("A:0", "B:0", "B:0")] + [{"text": "R", "meta": {"doc_id": "C"}}]
     assert [r["text"] for r in distinct_texts(rows)] == ["Q", "Q\n\n(B:0)", "Q\n\n(B:0, 2)", "R"]
+
+
+class FakeDB:
+    """Answers every query with no rows, and records them."""
+
+    def __init__(self):
+        self.statements = []
+
+    def query(self, statement, params=None, **kwargs):
+        self.statements.append(statement)
+        return [{"label": "SELLS"}] if statement.startswith("MATCH (v:Evidence") else []
+
+
+def test_failed_checks_close_the_questions_but_not_the_views(graph_schema, monkeypatch):
+    from starlette.testclient import TestClient
+
+    from kg_recipes import app
+
+    def prepare(state, sources):
+        state.db, state.rows = FakeDB(), graph.GraphRows()
+        state.checks = [{"name": "no self links", "description": "", "rows": [{"a": 1}], "count": 1, "error": None}]
+        state.status = "checks_failed"
+
+    monkeypatch.setattr(app, "prepare", prepare)
+    sources = graph.Sources(schema=graph_schema, documents=[], entity_list="", groups=[], mentions=[], links=[], relations=[])
+    question = app.Question(name="q", title="Q", cypher="MATCH (e) RETURN e")
+    client = TestClient(app.create_app(sources, [question], {}, background=False))
+    assert client.get("api/questions/q").status_code == 503
+    assert client.get("api/export").status_code == 503
+    assert client.get("api/search?q=acme").status_code == 200
+    assert client.post("api/cypher", json={"query": "MATCH (e) RETURN e"}).status_code == 200
+    assert client.get("api/node/C1").status_code == 404
+
+
+def test_link_view_looks_the_link_up_by_its_label(graph_schema, monkeypatch):
+    from starlette.testclient import TestClient
+
+    from kg_recipes import app
+
+    db = FakeDB()
+    monkeypatch.setattr(app, "prepare", lambda state, sources: setattr(state, "db", db))
+    sources = graph.Sources(schema=graph_schema, documents=[], entity_list="", groups=[], mentions=[], links=[], relations=[])
+    client = TestClient(app.create_app(sources, [], {}, background=False))
+    assert client.get("api/link/abc").status_code == 404
+    assert "-[r:`SELLS` {id: $id}]->" in db.statements[1]
+
+
+def small_graph(graph_schema):
+    text = 'Acme "Labs" sells Rocket Skates;\nback\\slash \u00e9'
+    passages = [{"text": text, "meta": {"doc_id": "D", "passage_id": "D:0", "doc_version": "1", "doc_date": "2024", "title": "T"}}]
+    mentions = [Mention("D", "D:0", 0, 4, "Acme", "COMPANY"), Mention("D", "D:0", 18, 31, "Rocket Skates", "PRODUCT")]
+    group_rows = [
+        {"group_id": "a", "type": "COMPANY", "mentions": [["D:0", 0, 4]], "rule_ids": ["C1"]},
+        {"group_id": "b", "type": "PRODUCT", "mentions": [["D:0", 18, 31]], "rule_ids": ["P1"]},
+    ]
+    nodes = pairs.mention_nodes(mentions, group_rows, linking.resolve(group_rows, []), graph_schema, {"C1": "Acme", "P1": "Rocket Skates"})
+    row = pairs.pair_rows(graph_schema.relation("MAKES"), {"D": passages}, mentions, nodes)[0]
+    return graph.build(graph_schema, passages, mentions, nodes, [({**row, "answer": "accept", "accept": ["SELLS"]}, "reviewer")])
+
+
+def test_export_has_the_passages_behind_every_link(graph_schema):
+    import json
+
+    rows = [json.loads(line) for line in graph.export_lines(small_graph(graph_schema))]
+    kinds = [r["kind"] for r in rows]
+    assert kinds == ["entity", "entity", "document", "passage", "mention", "mention", "evidence", "link"]
+    evidence, passage = rows[kinds.index("evidence")], rows[kinds.index("passage")]
+    assert evidence["passage_id"] == passage["passage_id"] and "Rocket Skates" in passage["text"]
+    assert passage["passage_kind"] == "paragraph" and rows[-1]["id"] == evidence["link_id"]
+
+
+def test_cypher_script_writes_literals(graph_schema):
+    assert graph.cypher_value({"a": [1, 2.5, True, None], "b": 'say "hi";\n\\'}) == '{`a`: [1, 2.5, true, null], `b`: "say \\"hi\\";\\n\\\\"}'
+    script = "".join(graph.cypher_script(small_graph(graph_schema)))
+    assert "MATCH (n) DETACH DELETE n" not in script and "$rows" not in script
+    assert "CREATE INDEX `link_SELLS`" in script and "CREATE (h)-[:`SELLS`" in script
+
+
+def test_export_formats(graph_schema, monkeypatch):
+    from starlette.testclient import TestClient
+
+    from kg_recipes import app
+
+    built = small_graph(graph_schema)
+
+    def prepare(state, sources):
+        state.db, state.rows = FakeDB(), built
+
+    monkeypatch.setattr(app, "prepare", prepare)
+    sources = graph.Sources(schema=graph_schema, documents=[], entity_list="", groups=[], mentions=[], links=[], relations=[])
+    client = TestClient(app.create_app(sources, [], {}, background=False))
+    assert client.get("api/export").text == "".join(graph.export_lines(built))
+    script = client.get("api/export?format=cypher")
+    assert script.headers["content-disposition"].endswith('"graph.cypher"') and script.text == "".join(graph.cypher_script(built))

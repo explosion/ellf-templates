@@ -723,8 +723,10 @@ agent's first answers to check it chooses more than one label where a passage st
 Runs Neo4j inside its own pod (Java and Neo4j Community are downloaded on the first
 start and kept on the cluster's shared storage, checked against pinned checksums),
 builds the graph from the schema, the documents and the settled datasets, and runs the
-schema's checks. Until the checks return no rows, the questions and the API answer with
-the failed checks instead. It serves, to project members:
+schema's checks. Until the checks return no rows, the questions (`api/questions/<name>`,
+`api/ask`) and `api/export` answer with the failed checks instead; search, the entity and
+link views and read-only Cypher stay open, to look into what the checks found. It
+serves, to project members:
 
 - **Questions:** a box for asking a new question, which needs `--llm-api-key` (an LLM
   writes the query, shown with the answer, marked unchecked; without a key the box says
@@ -740,8 +742,15 @@ the failed checks instead. It serves, to project members:
 
 Programs reach the same through an API under the service's URL, with the token from
 `ellf services url knowledge-graph`: `api/questions/<name>`, `api/cypher` (POST),
-`api/subgraph` (POST), `api/node/<id>`, `api/link/<id>`, `api/search`, `api/checks`, `api/export` (the graph as
-JSON lines, with provenance). Every query is read-only.
+`api/subgraph` (POST), `api/node/<id>`, `api/link/<id>`, `api/search`, `api/checks`, `api/export`.
+Every query is read-only.
+
+`api/export` is the whole graph with its provenance, as JSON lines, each with a `kind`:
+`entity`, `document`, `passage` (with its text, and `passage_kind`: paragraph or table row), `mention` (where an entity is named in a
+passage), `evidence` (one per passage behind a link, with the labellers' answers) and
+`link`. `api/export?format=cypher` is the same graph as a Cypher script, for loading into
+another Neo4j, e.g. `cypher-shell -f graph.cypher`. It adds to what's there, so load it
+into an empty database.
 
 **Create after:** `link-candidates` has run. Recreate it for new documents or datasets:
 a service's arguments are fixed when it's created; restart it to pick up new answers.
@@ -817,8 +826,9 @@ its candidate recall is the real one.
 ### build_graph.py
 
 Builds the graph locally from dataset exports and the assets, the way the service builds
-it, and writes it in the format of `api/export`. It needs only Python's standard library.
-Add `:<labeller>` to an export to keep only that labeller's answers.
+it, and writes it in the format of `api/export`, or as a Cypher script when `--out` ends
+in `.cypher`. It needs only Python's standard library. Add `:<labeller>` to an export to
+keep only that labeller's answers.
 
 ```bash
 python scripts/build_graph.py --schema config/graph_schema.json --entity-list entity_list.jsonl --documents documents-eval.jsonl --groups mention-groups-eval.jsonl --mentions mentions-gold.jsonl --links links-gold.jsonl --relations relations-relation_group-eval.jsonl:<labeller> --out graph-relations.jsonl

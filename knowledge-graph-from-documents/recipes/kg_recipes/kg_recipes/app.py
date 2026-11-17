@@ -3,7 +3,9 @@
 The app answers straight away and starts Neo4j and loads the graph in a background
 thread, so the page can show what it's doing during the first start's downloads. Every
 query runs in a read-only transaction. Until the schema's checks return no rows, the
-questions, views and API answer 503 with the failed checks, and the page shows them.
+questions and the export answer 503 with the failed checks, and the page shows them. The
+search, the entity and link views and read-only Cypher stay open, to look into what the
+checks found.
 
 All URLs in the page are relative, because the cluster serves the app under
 ``/services/<id>/``.
@@ -95,6 +97,8 @@ class State:
     message: str = "Starting"
     error: Optional[str] = None
     db: Optional[graph.Neo4j] = None
+    #: What was loaded into Neo4j, kept for the export.
+    rows: Optional[graph.GraphRows] = None
     summary: str = ""
     checks: List[dict] = field(default_factory=list)
     started: float = field(default_factory=time.monotonic)
@@ -121,6 +125,7 @@ def prepare(state: State, sources: graph.Sources) -> None:
         rows = graph.assemble(sources)
         state.report("Loading the graph")
         graph.load(db, rows)
+        state.rows = rows
         state.summary = rows.summary()
         state.report("Running the checks")
         state.checks = graph.run_checks(db, sources.schema)
@@ -198,12 +203,20 @@ def create_app(
     else:
         prepare(state, sources)
 
-    def needs_db(handler: Callable[[Request, graph.Neo4j], Any]) -> Callable[[Request], JSONResponse]:
+    def closed_by_checks() -> Optional[JSONResponse]:
+        if state.checks_failed:
+            return JSONResponse({"error": "The graph failed its checks.", "checks": state.checks_failed}, status_code=503)
+        return None
+
+    def needs_db(handler: Callable[[Request, graph.Neo4j], Any], checked: bool) -> Callable[[Request], JSONResponse]:
+        """``checked`` routes answer only once the checks pass: the questions, whose answers
+        would be wrong. The rest stay open, to look into what the checks found."""
+
         def endpoint(request: Request) -> JSONResponse:
             if state.db is None:
                 return JSONResponse({"error": state.error or state.message}, status_code=503)
-            if state.checks_failed:
-                return JSONResponse({"error": "The graph failed its checks.", "checks": state.checks_failed}, status_code=503)
+            if checked and (closed := closed_by_checks()):
+                return closed
             try:
                 return JSONResponse(handler(request, state.db))
             except KeyError as e:
@@ -213,9 +226,9 @@ def create_app(
 
         return endpoint
 
-    async def threaded(request: Request, handler) -> JSONResponse:
+    async def threaded(request: Request, handler, checked: bool = False) -> JSONResponse:
         # Queries run in a worker thread, so a slow one doesn't hold up other requests.
-        return await run_in_threadpool(needs_db(handler), request)
+        return await run_in_threadpool(needs_db(handler, checked), request)
 
     def index(request: Request) -> HTMLResponse:
         return HTMLResponse(resources.files(__package__).joinpath("static/index.html").read_text(encoding="utf-8"))
@@ -279,8 +292,11 @@ def create_app(
 
     def link(request: Request, db: graph.Neo4j) -> Dict[str, Any]:
         lid = request.path_params["id"]
-        found = db.query(
-            "MATCH (h:Entity)-[r {id: $id}]->(t:Entity) RETURN type(r) AS label, properties(r) AS props, "
+        # The evidence gives the link's label, so the lookup can use that label's index on
+        # the link id instead of reading every relationship.
+        labels = db.query("MATCH (v:Evidence {link_id: $id}) RETURN v.label AS label LIMIT 1", id=lid)
+        found = labels and db.query(
+            f"MATCH (h:Entity)-[r:`{labels[0]['label']}` {{id: $id}}]->(t:Entity) RETURN type(r) AS label, properties(r) AS props, "
             "h.id AS head_id, h.name AS head_name, t.id AS tail_id, t.name AS tail_name",
             id=lid,
         )
@@ -352,13 +368,17 @@ def create_app(
         text = str(body.get("question", "")).strip()
         if not text:
             return JSONResponse({"error": "Type a question first."}, status_code=400)
+        if closed := closed_by_checks():
+            return closed
         try:
             statement = await run_in_threadpool(llm.complete, cypher_prompt(text, sources.schema, questions))
             statement = statement.removeprefix("cypher").strip()
         except Exception as e:
             return JSONResponse({"error": f"The LLM couldn't write a query: {e}"}, status_code=502)
         response = await threaded(
-            request, lambda req, db: with_entities(db, {"question": text, "cypher": statement, "rows": db.query(read_only(statement)), "checked": False})
+            request,
+            lambda req, db: with_entities(db, {"question": text, "cypher": statement, "rows": db.query(read_only(statement)), "checked": False}),
+            checked=True,
         )
         if response.status_code == 400:
             data = json.loads(response.body)
@@ -366,25 +386,20 @@ def create_app(
         return response
 
     def export(request: Request):
-        if state.db is None or state.checks_failed:
+        """The graph as JSON lines, or with ``?format=cypher`` as a script that loads it into
+        another Neo4j."""
+        if state.rows is None:
             return JSONResponse({"error": state.error or "The graph isn't ready."}, status_code=503)
-        db = state.db
+        if closed := closed_by_checks():
+            return closed
+        if request.query_params.get("format") == "cypher":
+            headers = {"Content-Disposition": 'attachment; filename="graph.cypher"'}
+            return StreamingResponse(graph.cypher_script(state.rows), media_type="text/plain; charset=utf-8", headers=headers)
+        return StreamingResponse(graph.export_lines(state.rows), media_type="application/x-ndjson")
 
-        def rows():
-            for e in db.query("MATCH (e:Entity) RETURN e"):
-                yield json.dumps({"kind": "entity", **e["e"]}) + "\n"
-            for r in db.query(
-                "MATCH (h:Entity)-[r]->(t:Entity) RETURN type(r) AS label, h.id AS head, t.id AS tail, properties(r) AS props"
-            ):
-                yield json.dumps({"kind": "link", "label": r["label"], "head": r["head"], "tail": r["tail"], **r["props"]}) + "\n"
-            for v in db.query("MATCH (p:Passage)-[:SUPPORTS]->(v:Evidence) RETURN v, p.passage_id AS passage_id"):
-                yield json.dumps({"kind": "evidence", "passage_id": v["passage_id"], **v["v"]}) + "\n"
-
-        return StreamingResponse(rows(), media_type="application/x-ndjson")
-
-    def wrap(handler):
+    def wrap(handler, checked: bool = False):
         async def endpoint(request: Request) -> JSONResponse:
-            return await threaded(request, handler)
+            return await threaded(request, handler, checked)
 
         return endpoint
 
@@ -395,7 +410,7 @@ def create_app(
             Route("/api/checks", checks),
             Route("/api/scores", score_figures),
             Route("/api/questions", question_list),
-            Route("/api/questions/{name}", wrap(question)),
+            Route("/api/questions/{name}", wrap(question, checked=True)),
             Route("/api/node/{id:path}", wrap(node)),
             Route("/api/link/{id}", wrap(link)),
             Route("/api/search", wrap(search)),
