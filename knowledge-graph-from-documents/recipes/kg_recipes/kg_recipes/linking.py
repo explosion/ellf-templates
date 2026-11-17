@@ -32,6 +32,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Callable, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
+from .data import distinct_texts
 from .mentions import Mention, abbreviations
 from .schema import EntityType, Schema
 
@@ -450,7 +451,7 @@ def question_rows(
                     },
                 }
             )
-    return rows
+    return distinct_texts(rows)
 
 
 def group_rows(groups: Iterable[MentionGroup], list_version: str = "") -> List[dict]:
@@ -612,7 +613,7 @@ def fix_rows(
                             },
                         }
                     )
-    return rows, counts
+    return distinct_texts(rows), counts
 
 
 def gold_answers(

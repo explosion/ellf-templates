@@ -8,7 +8,9 @@ The built-in task tokenizes with a blank pipeline of a language, or with a pipel
 has a span categorizer; a pipeline with only a tokenizer, like the one Make tokenizer saves,
 isn't accepted. This task takes one, so the passages are split the same way here, in
 import-gold and in find-mentions, and a mention like ``VCM`` in ``(VCM)-induced`` can be
-marked on its own. Answers are saved like the built-in task's.
+marked on its own. Answers are saved like the built-in task's, except that an example is
+hashed on its passage id as well as its text, so a passage whose text appears elsewhere
+too, like a repeated table row, is labelled in each place.
 
 Don't use ``from __future__ import annotations`` in this module. The recipe schema
 builder reads the parameter annotations with ``inspect.signature`` and expects the
@@ -36,8 +38,7 @@ from ellf_recipes_sdk import (
     task_recipe,
 )
 
-from ..documents import is_whole_document
-from ..mentions import view_id
+from ..mentions import hashed, passage_tasks, view_id
 
 
 @task_recipe(
@@ -83,11 +84,11 @@ def kg_mentions(
     nlp = tokenizer.load() if tokenizer is not None else spacy.blank(lang)
     scheme = LabelScheme.resolve(label)
     labels = scheme.names()
-    # Mentions are marked in the passages, not in the whole-document ones that only show pairs.
-    stream = (eg for eg in input.load(rehash=True, dedup=True, input_key="text") if not is_whole_document(eg))
+    stream = passage_tasks(input.load(input_key="text"))
     if patterns is not None:
         matcher = patterns.load(nlp=nlp, label=labels, allow_overlap=overlapping)
-        stream = (eg for _, eg in matcher(stream))
+        # The matcher hashes the examples again, on their text alone.
+        stream = (hashed(eg) for _, eg in matcher(stream))
     return {
         "dataset": dataset.name,
         "stream": prodigy.recipes.spans.add_tokens(nlp, stream),

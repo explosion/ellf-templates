@@ -13,6 +13,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
+from .data import distinct_texts
 from .linking import normalise
 from .mentions import Mention
 from .schema import RelationGroup, Schema
@@ -236,4 +237,4 @@ def pair_rows(
                             },
                         }
                     )
-    return rows
+    return distinct_texts(rows)

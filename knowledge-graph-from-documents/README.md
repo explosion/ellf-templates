@@ -159,12 +159,15 @@ and the service `kg_graph`.
 - **Source documents:** JSONL, one document per line, with an id and either passages or
   the whole text, which is split into paragraphs at blank lines. Version and date are
   optional but kept on every link; tables can be one passage per row (`"kind":
-  "table_row"`). PDFs, XML or other formats need a small converter that writes this
+  "table_row"`). A `doc_id` is one version of one document: a new version gets its own
+  `doc_id`, with the earlier one in `version_of`, which keeps it on the same side of the
+  evaluation split. PDFs, XML or other formats need a small converter that writes this
   format; write it in your project, not in the recipes.
 
   ```json
   {"doc_id": "D1", "version": "2", "date": "2024-05-01", "title": "...", "url": "...", "passages": [{"text": "...", "section": "Results", "kind": "paragraph"}]}
   {"doc_id": "D2", "text": "First paragraph.\n\nSecond paragraph."}
+  {"doc_id": "D1-v3", "version": "3", "version_of": "D1", "passages": [{"text": "..."}]}
   ```
 
 - **Entity list:** JSONL, one entry per line, for every entity type the schema links.
@@ -182,8 +185,14 @@ and the service `kg_graph`.
   NIL, and a relation's `passage` can be left out when its group's scope is the whole
   document. Without gold labels, the evaluation tasks make them.
 
+  `start` and `end` count characters in the passage as `add-documents` writes it, with
+  runs of spaces and tabs collapsed, lines stripped, and the lines of a paragraph joined
+  when the document is one `text`. Offsets counted in the original text move wherever it
+  had extra whitespace, so give each mention its `text` too: `import-gold` then finds it
+  near its offsets, and stops with a list of the mentions it can't find.
+
   ```json
-  {"doc_id": "D1", "mentions": [{"passage": 0, "start": 10, "end": 18, "type": "TYPE_A", "ids": ["E1"]}], "relations": [{"label": "LABEL_ONE", "head": "E1", "tail": "E2", "passage": 0}]}
+  {"doc_id": "D1", "mentions": [{"passage": 0, "start": 10, "end": 18, "text": "Acme Inc", "type": "TYPE_A", "ids": ["E1"]}], "relations": [{"label": "LABEL_ONE", "head": "E1", "tail": "E2", "passage": 0}]}
   ```
 
 - **Mention patterns (optional):** spaCy token or phrase patterns for `find-mentions`,
@@ -405,8 +414,8 @@ project doesn't need, and put the chosen names in the remaining commands.
 
 Turns the source documents into one row per passage, and sets whole documents aside as
 the evaluation documents, chosen by a hash of their id, before anything is labelled.
-Problems with a document (no id, no text, an unknown passage kind) stop it with every
-line that needs fixing.
+Problems with a document (no id, no text, an unknown passage kind, an id used twice)
+stop it with every line that needs fixing.
 
 ```bash
 ellf actions create kg_add_documents --name add-documents --source "Source documents" --documents.name "documents" --eval-documents --eval-documents.name "documents-eval" --eval-share 0.2 --no-start
@@ -417,7 +426,7 @@ ellf actions create kg_add_documents --name add-documents --source "Source docum
 | `--source` | Source documents | your documents in the format above |
 | `--eval-share` | 0.2 | share of documents for evaluation |
 | `--whole-document` | off | add one passage holding each whole document, for relation groups whose scope is the whole document |
-| `--earlier` | | for a later batch: the documents assets of earlier runs, whose documents are skipped |
+| `--earlier` | | for a later batch: the documents assets of earlier runs, whose documents are skipped. A document whose id is there in another version stops the run: give the new version its own `doc_id`, with `version_of` |
 
 ### make-tokenizer
 
@@ -434,7 +443,8 @@ ellf actions create kg_make_tokenizer --name make-tokenizer --tokenizer.name "to
 
 Optional, when your documents come with gold labels: saves the gold mentions of the
 evaluation documents to `mentions-gold`, every passage of a gold document included, those
-with no mentions too. Gold links and relations stay in the Gold labels asset, which
+with no mentions too. Its log says how many mentions were moved to where their `text` is,
+and how many have no `text` to check their offsets against. Gold links and relations stay in the Gold labels asset, which
 `link-candidates-eval` and `make-pairs-eval` save to `links-gold` and the relations gold
 datasets. Add `--overlapping` if the mentions tasks use it, so the gold is saved in the
 same view.
@@ -579,8 +589,9 @@ evaluation documents decide which of them labels the rest. `mentions-eval` is th
 task on the evaluation documents, blind, for the gold labels.
 
 `kg_mentions` is the built-in `spans` task with the project's tokenizer (the built-in
-task only accepts a pipeline that has a span categorizer) and a compact view when
-mentions can't overlap.
+task only accepts a pipeline that has a span categorizer), a compact view when
+mentions can't overlap, and examples told apart by passage as well as text, so a passage
+whose text appears elsewhere too, like a repeated table row, is labelled in each place.
 
 **Create after:** `add-documents` and `make-tokenizer` have run.
 
@@ -591,7 +602,10 @@ ellf tasks create kg_mentions --name mentions-eval --dataset mentions-eval --inp
 
 ### links
 
-One yes/no question per mention and candidate: is the marked mention this entry?
+One yes/no question per mention and candidate: is the marked mention this entry? A
+question whose text another one has already, such as one about a passage two documents
+share, ends with its passage id, since a task shows only one of several examples with the
+same text. The relations and link-check tasks' rows do the same.
 `links-eval` asks the same about the evaluation documents' gold mentions, and
 `links-fix` the second round from `fix-links`.
 
@@ -846,4 +860,4 @@ you).
 
 ---
 
-*Exported: 2026-11-16T13:20:10Z &middot; Template format: 1 &middot; Ellf CLI: 24.0.0 &middot; Recipe packages: ellf-recipes 0.18.47, kg-recipes 0.2.11 &middot; Exported with: Claude Code 2.1.314 (claude-opus-5-5)*
+*Exported: 2026-11-16T13:20:10Z &middot; Template format: 1 &middot; Ellf CLI: 24.0.0 &middot; Recipe packages: ellf-recipes 0.18.47, kg-recipes 0.2.12 &middot; Exported with: Claude Code 2.1.314 (claude-opus-5-5)*

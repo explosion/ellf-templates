@@ -101,6 +101,35 @@ def abbreviations(text: str) -> Dict[str, str]:
     return found
 
 
+#: The keys a mentions example's input hash is made from: the text and where it is, so
+#: passages with the same text, e.g. a repeated table row, are separate examples.
+INPUT_KEYS = ("text", "passage_id")
+
+
+def hashed(eg: dict) -> dict:
+    """The passage with the hashes every mentions example has: the mentions task's,
+    find-mentions' and import-gold's, so review and the scores match them up."""
+    # Imported here: the scripts read this module with the standard library only.
+    from prodigy.util import set_hashes
+
+    key = {"text": eg["text"], "passage_id": (eg.get("meta") or {}).get("passage_id", "")}
+    hashes = set_hashes(key, input_keys=INPUT_KEYS, overwrite=True)
+    return {**eg, "_input_hash": hashes["_input_hash"], "_task_hash": hashes["_task_hash"]}
+
+
+def passage_tasks(rows: Iterable[dict]) -> Iterator[dict]:
+    """The Documents rows the mentions are marked in, hashed, each passage once. The
+    whole-document passages are left out: they only show the pairs of relations."""
+    seen = set()
+    for row in rows:
+        if (row.get("meta") or {}).get("kind") == "document":
+            continue
+        eg = hashed(row)
+        if eg["_input_hash"] not in seen:
+            seen.add(eg["_input_hash"])
+            yield eg
+
+
 def view_id(overlapping: bool) -> str:
     """The mentions task's view: compact unless mentions can overlap. Every answer saved to
     a mentions dataset uses it, since a review refuses datasets with different views."""

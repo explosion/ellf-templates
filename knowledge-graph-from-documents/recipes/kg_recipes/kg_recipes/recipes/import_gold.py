@@ -15,7 +15,7 @@ from typing import List, Literal, Optional
 import prodigy.recipes.spans
 import spacy
 from prodigy.structured_types import SpansManualExample
-from prodigy.util import log, set_hashes
+from prodigy.util import log
 
 from ellf_recipes_sdk import BoolProps, Dataset, Input, Model, OptionalProps, Props, TextProps, action_recipe, save_examples
 
@@ -23,7 +23,7 @@ from .. import gold as kg_gold
 from .. import schema as kg_schema
 from ..data import read_assets, read_jsonl
 from ..documents import documents_by_id, is_whole_document, passages_by_id
-from ..mentions import token_aligned, view_id
+from ..mentions import hashed, token_aligned, view_id
 
 
 @action_recipe(
@@ -69,28 +69,38 @@ def kg_import_gold(
     by_doc = documents_by_id(rows)
     by_passage = passages_by_id(rows)
     gold_rows = list(read_jsonl(Path(gold.path)))
-    mentions = kg_gold.gold_mentions(gold_rows, by_doc, graph)
+    report = kg_gold.GoldReport()
+    mentions = kg_gold.gold_mentions(gold_rows, by_doc, graph, report)
+    if report.problems:
+        shown = "\n".join(report.problems[:20])
+        raise ValueError(
+            f"{len(report.problems)} gold mentions can't be placed in their passages. Their offsets count in the "
+            f"passage text as the Documents asset holds it, with extra whitespace removed:\n{shown}"
+        )
     gold_docs = [r["doc_id"] for r in gold_rows if r.get("doc_id") in by_doc]
     # Every passage of a gold document is gold, those with no mentions too, except the
     # whole-document passages, which aren't labelled for mentions.
     passage_ids = [p["meta"]["passage_id"] for d in gold_docs for p in by_doc[d] if not is_whole_document(p)]
     examples = kg_gold.spans_examples(mentions, by_passage, passage_ids)
-    # Hashed like the mentions task's examples: on the passage text alone, before the spans.
+    # Hashed like the mentions task's examples, before the spans.
     nlp = tokenizer.load() if tokenizer is not None else spacy.blank(lang)
-    hashed, widened, dropped = [], 0, 0
+    answers, widened, dropped = [], 0, 0
     for eg in examples:
-        task = set_hashes({"text": eg["text"], "meta": eg["meta"]}, overwrite=True)
+        task = hashed({"text": eg["text"], "meta": eg["meta"]})
         spans, w, d = token_aligned(nlp, eg["text"], eg["spans"])
         widened, dropped = widened + w, dropped + d
-        hashed.append({**task, "spans": spans, "answer": "accept", "_annotator_id": annotator, "_session_id": annotator})
-    tokenized = list(prodigy.recipes.spans.add_tokens(nlp, hashed))
+        answers.append({**task, "spans": spans, "answer": "accept", "_annotator_id": annotator, "_session_id": annotator})
+    tokenized = list(prodigy.recipes.spans.add_tokens(nlp, answers))
     save_examples(dataset.name, tokenized, session_id=annotator, parse_as=SpansManualExample, view_id=view_id(overlapping))
     missing = len({r["doc_id"] for r in gold_rows} - set(by_doc))
     msg = (
         f"Saved {len(mentions)} gold mentions in {len(tokenized)} passages to '{dataset.name}' "
         f"({sum(1 for eg in tokenized if not eg.get('spans'))} of them with none). "
-        f"{widened} spans that ended inside a token were widened to whole tokens, {dropped} that covered "
-        f"no token were left out, and {missing} gold documents aren't in the given Documents assets."
+        f"{report.realigned} were moved to where their text is, {widened} spans that ended inside a token were "
+        f"widened to whole tokens, {dropped} that covered no token were left out, and {missing} gold documents "
+        "aren't in the given Documents assets."
     )
+    if report.unchecked:
+        msg += f" {report.unchecked} gold mentions have no 'text', so their offsets couldn't be checked."
     log(msg)
     print(msg)

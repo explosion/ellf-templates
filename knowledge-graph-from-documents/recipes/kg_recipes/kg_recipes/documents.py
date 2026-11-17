@@ -8,6 +8,10 @@ A source is turned into documents, one JSON object per document:
 or, without passages, with the whole text in "text", which is split into paragraphs at
 blank lines. Only "doc_id" and the text are required.
 
+A "doc_id" is one document, in one version: passages are identified by it. A new version
+of a document gets its own "doc_id", with the earlier one in "version_of", which keeps
+both on the same side of the evaluation split.
+
 The Documents asset then has one row per passage, in the shape tasks read:
 
     {"text": "...", "meta": {"doc_id": "D1", "passage_id": "D1:0", "doc_version": "2",
@@ -47,6 +51,7 @@ class Document:
     date: str = ""
     title: str = ""
     url: str = ""
+    version_of: str = ""
     extra: Dict = field(default_factory=dict)
 
 
@@ -94,7 +99,7 @@ def parse_document(row: dict, *, whole_document: bool = False) -> Document:
     if whole_document and not any(p.kind == "document" for p in passages):
         body = "\n\n".join(p.text for p in passages if p.kind != "document")
         passages.append(Passage(text=body, section="", kind="document"))
-    known = {"doc_id", "version", "date", "title", "url", "passages", "text"}
+    known = {"doc_id", "version", "date", "title", "url", "version_of", "passages", "text"}
     return Document(
         doc_id=doc_id,
         passages=passages,
@@ -102,6 +107,7 @@ def parse_document(row: dict, *, whole_document: bool = False) -> Document:
         date=str(row.get("date") or ""),
         title=str(row.get("title") or ""),
         url=str(row.get("url") or ""),
+        version_of=str(row.get("version_of") or "").strip(),
         extra={k: v for k, v in row.items() if k not in known},
     )
 
@@ -135,21 +141,52 @@ def in_eval(doc_id: str, share: float, seed: str = "eval") -> bool:
 
 
 def split(docs: Iterable[Document], share: float, seed: str = "eval") -> Tuple[List[Document], List[Document]]:
-    """The documents to label and the evaluation documents, split by document."""
+    """The documents to label and the evaluation documents, split by document. A new
+    version of a document lands on the same side as the version it replaces."""
     label, held = [], []
     for doc in docs:
-        (held if in_eval(doc.doc_id, share, seed) else label).append(doc)
+        (held if in_eval(doc.version_of or doc.doc_id, share, seed) else label).append(doc)
     return label, held
 
 
-def doc_key(meta: dict) -> Tuple[str, str]:
-    """A document's identity across batches: its id and version."""
-    return (str(meta.get("doc_id", "")), str(meta.get("doc_version", "")))
+def known_documents(rows: Iterable[dict]) -> Dict[str, str]:
+    """The version of every document in earlier Documents assets, by id."""
+    return {str(m.get("doc_id", "")): str(m.get("doc_version", "")) for m in (r.get("meta") or {} for r in rows)}
 
 
-def known_documents(rows: Iterable[dict]) -> set:
-    """The (id, version) of every document in earlier Documents assets."""
-    return {doc_key(r.get("meta") or {}) for r in rows}
+def new_documents(
+    rows: Iterable[dict], known: Dict[str, str], *, whole_document: bool = False
+) -> Tuple[List[Document], List[str], int]:
+    """The documents of a source that earlier batches don't have, every problem that stops
+    the source from being used, and how many documents were already there.
+
+    A document already in an earlier batch, in the same version, is skipped. One whose id
+    is there in another version, or that the source has twice, is a problem: passages are
+    identified by the document's id, so two versions under one id would be mixed up.
+    """
+    parsed, problems, skipped = [], [], 0
+    seen: Dict[str, int] = {}
+    for i, row in enumerate(rows):
+        try:
+            doc = parse_document(row, whole_document=whole_document)
+        except ValueError as err:
+            problems.append(f"line {i + 1}: {err}")
+            continue
+        if doc.doc_id in seen:
+            problems.append(f"line {i + 1}: document {doc.doc_id} is also on line {seen[doc.doc_id]}; every doc_id must be unique")
+            continue
+        seen[doc.doc_id] = i + 1
+        if doc.doc_id in known:
+            if known[doc.doc_id] == doc.version:
+                skipped += 1
+                continue
+            problems.append(
+                f"line {i + 1}: document {doc.doc_id} is in an earlier batch as version {known[doc.doc_id] or '(none)'}; "
+                f'give version {doc.version or "(none)"} its own doc_id, with "version_of": "{doc.doc_id}"'
+            )
+            continue
+        parsed.append(doc)
+    return parsed, problems, skipped
 
 
 def is_whole_document(row: dict) -> bool:
@@ -158,7 +195,24 @@ def is_whole_document(row: dict) -> bool:
 
 
 def passages_by_id(rows: Iterable[dict]) -> Dict[str, dict]:
-    return {r["meta"]["passage_id"]: r for r in rows}
+    """Passage rows by id. Raises ValueError if two different passages share an id, e.g.
+    two Documents assets with the same document in different versions."""
+    out: Dict[str, dict] = {}
+    for r in rows:
+        pid = r["meta"]["passage_id"]
+        other = out.get(pid)
+        if other is not None and (other["text"] != r["text"] or doc_key(other["meta"]) != doc_key(r["meta"])):
+            raise ValueError(
+                f"Two different passages have the id {pid}: the Documents assets given have the same document "
+                "twice, e.g. in two versions. Give each version its own doc_id."
+            )
+        out[pid] = r
+    return out
+
+
+def doc_key(meta: dict) -> Tuple[str, str]:
+    """A document's id and version."""
+    return (str(meta.get("doc_id", "")), str(meta.get("doc_version", "")))
 
 
 def documents_by_id(rows: Iterable[dict]) -> Dict[str, List[dict]]:

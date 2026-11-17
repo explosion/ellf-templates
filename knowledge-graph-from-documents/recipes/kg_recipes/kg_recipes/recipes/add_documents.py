@@ -50,7 +50,7 @@ SUBDIR = "kg_recipes"
         "earlier": OptionalProps(
             title="Earlier batches",
             optional_title="Skip documents from earlier batches",
-            description="Documents assets of earlier runs, evaluation ones included. Documents already in them, same id and version, are skipped.",
+            description="Documents assets of earlier runs, evaluation ones included. Documents already in them are skipped; a new version needs its own doc_id.",
         ),
         "seed": TextProps(title="Evaluation seed", description="Changes which documents are chosen. Keep it the same across batches."),
     },
@@ -71,17 +71,7 @@ def kg_add_documents(
     if taken:
         raise ValueError(f"Assets with these names already exist: {', '.join(taken)}. Name the new batch differently.")
     known = docs.known_documents(read_assets([a.path for a in earlier or []]))
-    parsed, problems, skipped = [], [], 0
-    for i, row in enumerate(read_jsonl(Path(source.path))):
-        try:
-            doc = docs.parse_document(row, whole_document=whole_document)
-        except ValueError as err:
-            problems.append(f"line {i + 1}: {err}")
-            continue
-        if (doc.doc_id, doc.version) in known:
-            skipped += 1
-            continue
-        parsed.append(doc)
+    parsed, problems, skipped = docs.new_documents(read_jsonl(Path(source.path)), known, whole_document=whole_document)
     if problems:
         shown = "\n".join(problems[:20])
         raise ValueError(f"{len(problems)} documents can't be used:\n{shown}")

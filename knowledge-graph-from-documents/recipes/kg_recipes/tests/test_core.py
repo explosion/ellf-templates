@@ -360,3 +360,70 @@ def test_whole_document_passage_isnt_labelled():
     doc = documents.parse_document({"doc_id": "D", "text": "One.\n\nTwo."}, whole_document=True)
     rows = list(documents.passage_rows(doc))
     assert [documents.is_whole_document(r) for r in rows] == [False, False, True]
+
+
+def test_a_doc_id_is_one_document_in_one_version():
+    rows = [
+        {"doc_id": "D1", "version": "1", "text": "Same."},
+        {"doc_id": "D2", "version": "2", "text": "Revised."},
+        {"doc_id": "D3", "text": "New."},
+        {"doc_id": "D3", "text": "Again."},
+    ]
+    parsed, problems, skipped = documents.new_documents(rows, {"D1": "1", "D2": "1"})
+    assert [d.doc_id for d in parsed] == ["D3"] and skipped == 1
+    assert "D2 is in an earlier batch as version 1" in problems[0] and '"version_of": "D2"' in problems[0]
+    assert "D3 is also on line 3" in problems[1]
+    # A new version under its own id lands on the same side of the split as the one it replaces.
+    docs = [documents.parse_document({"doc_id": f"D{i}", "text": "x"}) for i in range(50)]
+    newer = [documents.parse_document({"doc_id": f"D{i}-v2", "version_of": f"D{i}", "text": "y"}) for i in range(50)]
+    held = {d.doc_id for d in documents.split(docs, 0.3)[1]}
+    assert {d.version_of for d in documents.split(newer, 0.3)[1]} == held
+
+
+def test_passages_by_id_refuses_two_versions_under_one_id():
+    v1 = list(documents.passage_rows(documents.parse_document({"doc_id": "D", "version": "1", "text": "Old."})))
+    v2 = list(documents.passage_rows(documents.parse_document({"doc_id": "D", "version": "2", "text": "New."})))
+    assert len(documents.passages_by_id(v1 + v1)) == 1
+    with pytest.raises(ValueError, match="D:0"):
+        documents.passages_by_id(v1 + v2)
+
+
+def test_gold_offsets_are_checked_against_their_text(graph_schema):
+    doc = documents.parse_document({"doc_id": "D", "passages": [{"text": "  Acme  Corporation sells\tskates."}]}, whole_document=True)
+    passages = {"D": list(documents.passage_rows(doc))}
+    assert passages["D"][0]["text"] == "Acme Corporation sells skates."
+    rows = [{"doc_id": "D", "mentions": [
+        {"passage": 0, "start": 2, "end": 19, "text": "Acme  Corporation", "type": "COMPANY", "ids": ["C1"]},
+        {"passage": 0, "start": 0, "end": 4, "text": "Acme", "type": "COMPANY"},
+        {"passage": 0, "start": 0, "end": 4, "text": "Globex", "type": "COMPANY"},
+        {"passage": 0, "start": 30, "end": 40, "type": "COMPANY"},
+        {"passage": 1, "start": 0, "end": 4, "type": "COMPANY"},
+        {"passage": 2, "start": 0, "end": 4, "type": "COMPANY"},
+    ]}]
+    report = gold.GoldReport()
+    found = gold.gold_mentions(rows, passages, graph_schema, report)
+    assert [g.mention.text for g in found] == ["Acme Corporation", "Acme"]
+    assert report.realigned == 1 and report.unchecked == 1
+    assert len(report.problems) == 4
+    assert "'Globex' isn't in passage 0" in report.problems[0]
+    assert "whole-document passage" in report.problems[2] and "no passage 2" in report.problems[3]
+
+
+def test_passages_with_the_same_text_are_separate_examples():
+    from kg_recipes.mentions import hashed, passage_tasks
+
+    rows = [{"text": "Shared row.", "meta": {"passage_id": pid, "kind": "table_row"}} for pid in ("A:0", "B:0", "A:0")]
+    rows.append({"text": "Shared row.", "meta": {"passage_id": "A:1", "kind": "document"}})
+    tasks = list(passage_tasks(rows))
+    assert [t["meta"]["passage_id"] for t in tasks] == ["A:0", "B:0"]
+    assert tasks[0]["_input_hash"] != tasks[1]["_input_hash"]
+    # import-gold hashes its examples the same way, whatever else they hold.
+    again = hashed({**rows[0], "spans": [{"start": 0, "end": 6, "label": "X"}]})
+    assert (again["_input_hash"], again["_task_hash"]) == (tasks[0]["_input_hash"], tasks[0]["_task_hash"])
+
+
+def test_rows_with_the_same_text_are_told_apart():
+    from kg_recipes.data import distinct_texts
+
+    rows = [{"text": "Q", "meta": {"passage_id": p}} for p in ("A:0", "B:0", "B:0")] + [{"text": "R", "meta": {"doc_id": "C"}}]
+    assert [r["text"] for r in distinct_texts(rows)] == ["Q", "Q\n\n(B:0)", "Q\n\n(B:0, 2)", "R"]

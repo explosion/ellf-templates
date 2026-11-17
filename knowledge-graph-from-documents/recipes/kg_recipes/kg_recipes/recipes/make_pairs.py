@@ -103,7 +103,8 @@ def kg_make_pairs(
     n = write_jsonl(path, out)
     pairs.register(f"{SUBDIR}/{pairs.name}.jsonl", loader="jsonl", version="1.0.0", meta={"rows": n, "relation": relation})
     if gold is not None and gold_relations is not None:
-        labels = kg_gold.gold_relations(read_jsonl(Path(gold.path)), by_doc, graph)
+        report = kg_gold.GoldReport()
+        labels = kg_gold.gold_relations(read_jsonl(Path(gold.path)), by_doc, graph, report)
         stands_for = kg_pairs.gold_ids_of_text_nodes(gold_mentions, graph)
         stream = prodigy.recipes.textcat.add_label_options((set_hashes(dict(r)) for r in out), group.all_labels)
         answers, covered = [], set()
@@ -132,6 +133,8 @@ def kg_make_pairs(
         msg = f"Saved {len(answers)} gold relation answers to '{gold_relations.name}'. {len(covered)} of the {total} gold {relation} relations are among the pairs."
         if no_passage:
             msg += f" {no_passage} gold {relation} relations have no passage, which a passage-scope group needs, and were left out."
+        if report.problems:
+            msg += f" {len(report.problems)} gold relations were left out: " + "; ".join(report.problems[:5])
         log(msg)
         print(msg)
     undecided = sum(1 for g in group_rows if g["group_id"] not in resolved)

@@ -33,8 +33,7 @@ from ellf_recipes_sdk import (
 )
 
 from .. import schema as kg_schema
-from ..documents import is_whole_document
-from ..mentions import as_answer, label_tasks, model_spans, token_aligned, view_id
+from ..mentions import as_answer, hashed, label_tasks, model_spans, passage_tasks, token_aligned, view_id
 
 
 @action_recipe(
@@ -99,7 +98,7 @@ def kg_find_mentions(
     view = view_id(overlapping)
 
     def passages():
-        return (eg for eg in documents.load(rehash=True, dedup=True, input_key="text") if not is_whole_document(eg))
+        return passage_tasks(documents.load(input_key="text"))
 
     def tasks():
         return prodigy.recipes.spans.add_tokens(nlp, passages())
@@ -124,7 +123,8 @@ def kg_find_mentions(
         def matched():
             for _, eg in matcher(passages()):
                 spans = [{"start": s["start"], "end": s["end"], "label": s["label"]} for s in eg.get("spans") or []]
-                yield as_answer({k: v for k, v in eg.items() if k != "spans"}, spans, annotator)
+                # The matcher hashes the examples again, on their text alone.
+                yield as_answer(hashed({k: v for k, v in eg.items() if k != "spans"}), spans, annotator)
 
         n = save(prodigy.recipes.spans.add_tokens(nlp, matched()), annotator)
         log(f"Saved {n} passages labelled by {annotator}")

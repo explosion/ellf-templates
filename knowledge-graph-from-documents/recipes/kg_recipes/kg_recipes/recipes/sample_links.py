@@ -18,7 +18,7 @@ from prodigy.util import log
 from ellf_recipes_sdk import Asset, Input, InputDataset, IntProps, OptionalProps, Output, Props, TextProps, action_recipe
 
 from .. import schema as kg_schema
-from ..data import write_jsonl
+from ..data import distinct_texts, write_jsonl
 from ..documents import passages_by_id
 from ..graph import Sources, assemble
 
@@ -120,4 +120,4 @@ def sample_rows(rows, per_label: int, seed: int) -> List[dict]:
                 taken += 1
             if taken >= per_label:
                 break
-    return out
+    return distinct_texts(out)

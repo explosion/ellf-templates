@@ -1,6 +1,6 @@
 __title__ = "kg_recipes"
 __name__ = "kg_recipes"
-__version__ = "0.2.11"
+__version__ = "0.2.12"
 __summary__ = "Knowledge graph from documents: documents, mentions, entity linking, relations and a Neo4j service, on your Ellf cluster"
 __uri__ = ""
 __author__ = "Explosion"

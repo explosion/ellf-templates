@@ -49,6 +49,24 @@ def flatten(row: dict) -> dict:
     return flat
 
 
+def distinct_texts(rows: List[dict]) -> List[dict]:
+    """The rows, with no two texts the same. The built-in tasks hash an example on its text
+    alone and show only the first of several with the same text, e.g. the questions about a
+    passage that two documents share; a row whose text came before gets where it's from
+    added at the end, which leaves the offsets of its spans as they are."""
+    seen = set()
+    for row in rows:
+        meta = row.get("meta") or {}
+        where = meta.get("passage_id") or meta.get("doc_id") or ""
+        text, n = row["text"], 1
+        while text in seen:
+            n += 1
+            text = row["text"] + (f"\n\n({where})" if n == 2 else f"\n\n({where}, {n - 1})")
+        row["text"] = text
+        seen.add(text)
+    return rows
+
+
 def read_assets(paths: Iterable[str]) -> List[dict]:
     return [row for path in paths for row in read_jsonl(Path(path))]
 
