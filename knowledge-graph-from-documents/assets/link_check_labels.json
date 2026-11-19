@@ -1,0 +1,9 @@
+{
+  "CORRECT": {
+    "description": "The passages shown state this link between these two entities, with this label, and both entities are the ones the passages mean.",
+    "do_not_mark": [
+      "a link the passages only suggest, ask about, or rule out",
+      "the right relation between the wrong entities, e.g. a wrongly linked name"
+    ]
+  }
+}

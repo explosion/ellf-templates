@@ -156,5 +156,29 @@
     "author": "Explosion",
     "gpu": true,
     "sample_data": true
+  },
+  {
+    "name": "knowledge-graph-from-documents",
+    "title": "Knowledge Graph from Documents",
+    "description": "Turn your documents into a knowledge graph of entities and relations, and measure how accurate it is. Entity mentions, links to your own entity list, and relations are labelled as separate steps by rules, models, LLMs or annotators, and each step is scored against gold labels from held-out documents, as is the final graph. The graph runs in Neo4j on your cluster, and every edge points back to the passages it came from.",
+    "tags": [
+      "Information Extraction",
+      "Named Entity Recognition",
+      "Relation Extraction",
+      "Evaluation",
+      "spaCy",
+      "Neo4j"
+    ],
+    "counts": {
+      "tasks": 5,
+      "actions": 8,
+      "agents": 2,
+      "services": 1,
+      "recipes": 10,
+      "plans": 1
+    },
+    "url": "https://github.com/explosion/ellf-templates/tree/main/knowledge-graph-from-documents",
+    "author": "Explosion",
+    "sample_data": false
   }
 ]

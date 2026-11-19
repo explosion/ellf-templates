@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Knowledge Graph</title>
+<link rel="icon" href="data:,">
+<style>
+:root { --bg: #f7f6f9; --fg: #1a1525; --muted: #6b6478; --line: #e3e0ea; --accent: #5b4b8a; --accent-soft: #ece8f6; --warn: #a3412a; --warn-soft: #fbece7; --ok: #2f6b46; --card: #fff; --head: #fde7a7; --tail: #cde9f7;
+  --c0: #5b4b8a; --c1: #c2622d; --c2: #2b7a8c; --c3: #8a7a1e; --c4: #a3406e; --c5: #4f7a3a; }
+@media (prefers-color-scheme: dark) { :root { --bg: #15121c; --fg: #ece9f2; --muted: #a49db3; --line: #2f2a3b; --accent: #b3a6d9; --accent-soft: #2a2438; --warn: #e48a72; --warn-soft: #3a211b; --ok: #7fc59a; --card: #1c1826; --head: #6b5310; --tail: #164a63;
+  --c0: #b3a6d9; --c1: #e8935f; --c2: #6cc0d1; --c3: #d6c45a; --c4: #e07fae; --c5: #95c97a; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 Inter, system-ui, sans-serif; }
+header { padding: 20px 24px 0; max-width: 1200px; margin: 0 auto; }
+h1 { font-size: 22px; margin: 0 0 4px; }
+.lead { margin: 0 0 4px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.banner { margin: 12px 0 0; padding: 10px 14px; border-radius: 8px; background: var(--warn-soft); color: var(--warn); }
+.banner.ok { background: transparent; color: var(--ok); padding: 0; }
+nav { display: flex; gap: 4px; margin-top: 16px; border-bottom: 1px solid var(--line); }
+nav button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 8px 14px; font-weight: 600; color: var(--muted); }
+nav button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+nav button:hover { background: none; color: var(--fg); }
+main { max-width: 1200px; margin: 0 auto; padding: 16px 24px 48px; }
+.panel[hidden] { display: none; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; min-width: 0; }
+.card h2 { font-size: 16px; margin: 0 0 4px; }
+.card h3 { font-size: 15px; margin: 0 0 2px; }
+button { font: inherit; cursor: pointer; border-radius: 6px; }
+.primary { background: var(--accent); color: var(--card); border: 1px solid var(--accent); padding: 5px 14px; font-weight: 600; }
+.primary:hover { filter: brightness(1.1); }
+.secondary { background: var(--card); color: var(--accent); border: 1px solid var(--accent); padding: 3px 10px; font-size: 13px; }
+.secondary:hover, .secondary[aria-expanded="true"] { background: var(--accent-soft); }
+.name { background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; text-align: left; }
+.name:hover { text-decoration-thickness: 2px; }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input, textarea { font: inherit; width: 100%; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); color: var(--fg); }
+textarea { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 13px; min-height: 90px; }
+.row { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+.row > div { min-width: 0; flex: 1; }
+.answer { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.tag { display: inline-block; font-size: 12px; border: 1px solid var(--line); border-radius: 10px; padding: 0 8px; margin: 0 4px 2px 0; color: var(--muted); }
+.tag.warn { color: var(--warn); border-color: var(--warn); }
+.split { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 800px) { .split { grid-template-columns: 1fr; } main, header { padding-left: 16px; padding-right: 16px; } }
+.results { max-height: 70vh; overflow-y: auto; margin-top: 8px; }
+.result { display: block; width: 100%; text-align: left; background: none; border: 0; border-radius: 6px; padding: 6px 8px; color: var(--fg); }
+.result:hover { background: var(--accent-soft); }
+.result[aria-current="true"] { background: var(--accent-soft); box-shadow: inset 3px 0 var(--accent); }
+.result b { font-weight: 600; }
+.evidence td { background: var(--bg); }
+.passage { white-space: pre-wrap; background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; margin: 6px 0 2px; font-size: 13px; }
+mark.head { background: var(--head); color: inherit; border-radius: 3px; padding: 0 1px; }
+mark.tail { background: var(--tail); color: inherit; border-radius: 3px; padding: 0 1px; }
+code, pre { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12px; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--bg); border-radius: 6px; padding: 8px 10px; margin: 6px 0; }
+.examples { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+details summary { cursor: pointer; }
+.error { color: var(--warn); }
+.graph { margin: 8px 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.graph svg { display: block; width: 100%; height: auto; }
+.graph .node { cursor: pointer; }
+.graph .node:hover circle, .graph .node:focus circle { stroke: var(--fg); stroke-width: 2; }
+.graph .node:focus { outline: none; }
+.graph text { font-size: 11px; fill: var(--fg); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; stroke-linejoin: round; }
+.graph .edge-label { font-size: 10px; fill: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 6px 10px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.legend i.line { width: 16px; height: 3px; border-radius: 2px; vertical-align: 2px; }
+input:disabled { background: var(--bg); color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Knowledge graph</h1>
+  <p class="lead" id="summary">Starting…</p>
+  <p class="muted small" id="sources"></p>
+  <div id="checks"></div>
+  <nav role="tablist">
+    <button role="tab" id="tab-questions" aria-controls="questions" aria-selected="true">Questions</button>
+    <button role="tab" id="tab-entities" aria-controls="entities" aria-selected="false">Entities</button>
+    <button role="tab" id="tab-query" aria-controls="query" aria-selected="false">Query and API</button>
+  </nav>
+</header>
+<main>
+  <section class="panel" id="questions" role="tabpanel" aria-labelledby="tab-questions">
+    <div class="card" id="ask-card">
+      <h2>Ask a question</h2>
+      <p class="muted small" id="ask-note">An LLM writes a read-only query, shown with the answer. These answers are not checked.</p>
+      <div class="row"><div><input id="ask" placeholder="A question about the entities and links in this graph"></div><button class="primary" id="ask-btn">Ask</button></div>
+      <div id="ask-out"></div>
+    </div>
+    <h2 style="font-size:16px;margin:20px 0 4px">The questions this graph was built for</h2>
+    <p class="muted">Run one to see its answer; click a name in the answer to open that entity and the passages behind its links.</p>
+    <div id="question-list">Loading…</div>
+  </section>
+
+  <section class="panel" id="entities" role="tabpanel" aria-labelledby="tab-entities" hidden>
+    <div class="split">
+      <div class="card">
+        <label for="search"><b>Find an entity</b></label>
+        <p class="muted small" style="margin:2px 0 6px">By name or id. The list starts with the entities that have the most links.</p>
+        <input id="search" type="search" placeholder="Name or id" autocomplete="off">
+        <div class="results" id="results"></div>
+      </div>
+      <div class="card" id="entity"><p class="muted">Loading…</p></div>
+    </div>
+  </section>
+
+  <section class="panel" id="query" role="tabpanel" aria-labelledby="tab-query" hidden>
+    <div class="card">
+      <h2>Cypher</h2>
+      <p class="muted small">Read-only queries on the graph. Entities are <code>(:Entity {id, type, name})</code>, linked by relationships named after the relation labels, with <code>evidence</code> (how many passages) and <code>conditions</code>. Passages and documents: <code>(:Document)-[:HAS_PASSAGE]-&gt;(:Passage)-[:MENTIONS]-&gt;(:Entity)</code>.</p>
+      <div class="examples" id="examples"></div>
+      <textarea id="cypher" aria-label="Cypher query">MATCH (h:Entity)-[r]->(t:Entity) RETURN h.name AS head, type(r) AS label, t.name AS tail, r.evidence AS passages ORDER BY passages DESC LIMIT 20</textarea>
+      <p><button class="primary" id="run">Run</button></p>
+      <div id="cypher-out"></div>
+    </div>
+    <div class="card">
+      <h2>API</h2>
+      <p class="muted small">Programs use the same data. Get a token with <code>ellf services url &lt;service name&gt;</code> and send it as <code>Authorization: Bearer &lt;token&gt;</code>. Every query is read-only.</p>
+      <div class="scroll"><table id="api"></table></div>
+    </div>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pct = (x) => `${Math.round(x * 100)}%`;
+let current = null;
+
+async function api(path, options) {
+  const res = await fetch(path, options);
+  const data = await res.json().catch(() => ({ error: `${res.status} ${res.statusText}` }));
+  if (!res.ok) throw Object.assign(new Error(data.error || res.statusText), { data });
+  return data;
+}
+
+function showTab(name) {
+  for (const t of ["questions", "entities", "query"]) {
+    $(`tab-${t}`).setAttribute("aria-selected", String(t === name));
+    $(t).hidden = t !== name;
+  }
+  if (name === "entities" && !$("results").children.length) search();
+}
+
+// A value in an answer: entity names open the entity, everything else stays plain.
+function value(v, entities) {
+  if (Array.isArray(v)) return v.map((x) => value(x, entities)).join(", ");
+  if (v && typeof v === "object") return `<code>${esc(JSON.stringify(v))}</code>`;
+  if (typeof v === "string" && entities[v]) return `<button class="name" data-node="${esc(entities[v])}">${esc(v)}</button>`;
+  return esc(v);
+}
+
+function table(rows, entities = {}) {
+  if (!rows || !rows.length) return '<p class="muted">No rows.</p>';
+  const cols = Object.keys(rows[0]);
+  const cell = (v) => (typeof v === "number" ? `<td class="num">${v}</td>` : `<td>${value(v, entities)}</td>`);
+  return `<div class="scroll"><table><tr>${cols.map((c) => `<th>${esc(c)}</th>`).join("")}</tr>` +
+    rows.map((r) => `<tr>${cols.map((c) => cell(r[c])).join("")}</tr>`).join("") + "</table></div>";
+}
+
+function bindNames(root) {
+  root.querySelectorAll("[data-node]").forEach((b) => {
+    const open = () => { showTab("entities"); showNode(b.dataset.node, true); };
+    b.addEventListener("click", open);
+    if (b.tagName !== "BUTTON") b.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+  });
+}
+
+// Colours by entity type (the first three) and by relation group (the last three), in the order they're first seen.
+const TYPE_COLORS = {}, GROUP_COLORS = {};
+const colorOf = (map, key) => (map[key] ??= `var(--c${(map === GROUP_COLORS ? 3 : 0) + (Object.keys(map).length % 3)})`);
+const short = (t, n = 24) => (t.length > n ? t.slice(0, n - 1) + "…" : t);
+
+// One edge per pair of entities, with every label between them.
+function pairs(nodes, links) {
+  const byId = new Map(nodes.map((d) => [d.id, d]));
+  const edges = new Map();
+  for (const l of links) {
+    const a = byId.get(l.head), b = byId.get(l.tail);
+    if (!a || !b || a === b) continue;
+    const key = [a.id, b.id].sort().join("\u0000");
+    const e = edges.get(key) || edges.set(key, { a, b, labels: new Set(), group: l.group, arrowTo: new Set() }).get(key);
+    e.labels.add(l.label);
+    if (l.directed) e.arrowTo.add(b.id);
+  }
+  return [...edges.values()];
+}
+
+function forceLayout(nodes, edges, w, h) {
+  const n = nodes.length;
+  nodes.forEach((d, i) => { const a = (2 * Math.PI * i) / n; d.i = i; d.x = w / 2 + w * 0.35 * Math.cos(a); d.y = h / 2 + h * 0.35 * Math.sin(a); });
+  const k = Math.sqrt((w * h) / Math.max(n, 1));
+  let t = w / 8;
+  for (let it = 0; it < 300; it++) {
+    const fx = new Float64Array(n), fy = new Float64Array(n);
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+      const dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y, d = Math.hypot(dx, dy) || 0.01, f = (k * k) / d;
+      fx[i] += (dx / d) * f; fy[i] += (dy / d) * f; fx[j] -= (dx / d) * f; fy[j] -= (dy / d) * f;
+    }
+    for (const e of edges) {
+      const dx = e.a.x - e.b.x, dy = e.a.y - e.b.y, d = Math.hypot(dx, dy) || 0.01, f = (d * d) / k;
+      fx[e.a.i] -= (dx / d) * f; fy[e.a.i] -= (dy / d) * f; fx[e.b.i] += (dx / d) * f; fy[e.b.i] += (dy / d) * f;
+    }
+    for (const d of nodes) {
+      fx[d.i] += (w / 2 - d.x) * 0.05; fy[d.i] += (h / 2 - d.y) * 0.05;
+      const m = Math.hypot(fx[d.i], fy[d.i]) || 1, step = Math.min(m, t);
+      d.x += (fx[d.i] / m) * step; d.y += (fy[d.i] / m) * step;
+    }
+    t *= 0.985;
+  }
+  // Fit the layout into the frame, leaving room for the names on either side.
+  const xs = nodes.map((d) => d.x), ys = nodes.map((d) => d.y);
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  for (const d of nodes) {
+    const side = Math.min(140, w / 5);
+    d.x = side + ((d.x - x0) / (x1 - x0 || 1)) * (w - 2 * side);
+    d.y = 24 + ((d.y - y0) / (y1 - y0 || 1)) * (h - 48);
+  }
+}
+
+function ringLayout(center, others, w, h) {
+  center.x = w / 2; center.y = h / 2;
+  const two = others.length > 18, r = Math.min(w, h) / 2 - 28;
+  others.forEach((d, i) => {
+    const a = (2 * Math.PI * i) / others.length - Math.PI / 2, rr = two && i % 2 ? r * 0.62 : r;
+    d.x = w / 2 + rr * Math.cos(a) * (w / h) * 0.75; d.y = h / 2 + rr * Math.sin(a);
+  });
+}
+
+// An SVG diagram of entities and their links; clicking an entity opens it.
+function diagram(nodes, links, center = null) {
+  const w = Math.max(360, Math.min(760, window.innerWidth - 72));
+  const h = center ? (nodes.length > 12 ? 460 : 340) : Math.min(760, 260 + nodes.length * 9);
+  const edges = pairs(nodes, links);
+  if (center) ringLayout(nodes.find((d) => d.id === center), nodes.filter((d) => d.id !== center), w, h);
+  else forceLayout(nodes, edges, w, h);
+  const showLabels = edges.length <= 24;
+  const radius = (d) => (d.id === center ? 9 : 6);
+  const lines = edges.map((e) => {
+    const dx = e.b.x - e.a.x, dy = e.b.y - e.a.y, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d;
+    const x1 = e.a.x + ux * radius(e.a), y1 = e.a.y + uy * radius(e.a), x2 = e.b.x - ux * (radius(e.b) + 2), y2 = e.b.y - uy * (radius(e.b) + 2);
+    const color = colorOf(GROUP_COLORS, e.group), text = [...e.labels].join(", ");
+    const head = (x, y, vx, vy) => `<polygon points="${x},${y} ${x - vx * 8 - vy * 4},${y - vy * 8 + vx * 4} ${x - vx * 8 + vy * 4},${y - vy * 8 - vx * 4}" fill="currentColor"/>`;
+    const arrows = (e.arrowTo.has(e.b.id) ? head(x2, y2, ux, uy) : "") + (e.arrowTo.has(e.a.id) ? head(x1, y1, -ux, -uy) : "");
+    const label = showLabels ? `<text class="edge-label" x="${(e.a.x + e.b.x) / 2}" y="${(e.a.y + e.b.y) / 2 - 3}" text-anchor="middle">${esc(text)}</text>` : "";
+    return `<g style="color:${color}"><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="currentColor" stroke-width="1.6"><title>${esc(e.a.name)} ${esc(text)} ${esc(e.b.name)}</title></line>${arrows}${label}</g>`;
+  }).join("");
+  const dots = nodes.map((d) => {
+    const right = d.x >= w / 2 || d.id === center, dx = d.id === center ? 0 : right ? 10 : -10;
+    const anchor = d.id === center ? "middle" : right ? "start" : "end", dy = d.id === center ? -14 : 4;
+    return `<g class="node" data-node="${esc(d.id)}" tabindex="0" role="button" aria-label="Open ${esc(d.name)}">
+      <circle cx="${d.x}" cy="${d.y}" r="${radius(d)}" fill="${colorOf(TYPE_COLORS, d.type)}"><title>${esc(d.name)} (${esc(d.type)})</title></circle>
+      <text x="${d.x + dx}" y="${d.y + dy}" text-anchor="${anchor}"${d.id === center ? ' font-weight="600"' : ""}>${esc(short(d.name, w < 500 ? 14 : 24))}</text></g>`;
+  }).join("");
+  const types = [...new Set(nodes.map((d) => d.type))], groups = [...new Set(edges.map((e) => e.group))];
+  const legend = types.map((t) => `<span><i style="background:${colorOf(TYPE_COLORS, t)}"></i>${esc(t)}</span>`).join("") +
+    groups.map((g) => `<span><i class="line" style="background:${colorOf(GROUP_COLORS, g)}"></i>${esc(g)}</span>`).join("") +
+    (showLabels ? "" : "<span>Hover a line for its labels.</span>");
+  return `<div class="graph"><svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Diagram of ${nodes.length} entities and ${edges.length} links">${lines}${dots}</svg>
+    <div class="legend">${legend}</div></div>`;
+}
+
+// A button under an answer that draws its entities and every link between them.
+function diagramButton(entities) {
+  return Object.keys(entities || {}).length >= 2 ? '<p><button class="secondary" data-diagram>Show as a diagram</button></p><div data-diagram-out></div>' : "";
+}
+
+function bindDiagram(root, entities) {
+  const button = root.querySelector("[data-diagram]");
+  if (!button) return;
+  button.addEventListener("click", async () => {
+    const out = root.querySelector("[data-diagram-out]");
+    const open = button.getAttribute("aria-expanded") === "true";
+    button.setAttribute("aria-expanded", String(!open));
+    button.textContent = open ? "Show as a diagram" : "Hide the diagram";
+    if (open) { out.innerHTML = ""; return; }
+    out.innerHTML = '<p class="muted">Drawing…</p>';
+    try {
+      const g = await api("api/subgraph", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: [...new Set(Object.values(entities))] }) });
+      out.innerHTML = `<p class="muted small">The answer's entities and every link between them, including links the answer doesn't use.</p>${diagram(g.nodes, g.links)}`;
+      bindNames(out);
+    } catch (e) { out.innerHTML = `<p class="error">${esc(e.message)}</p>`; }
+  });
+}
+
+function figures(f, absence) {
+  const items = Object.entries(f || {});
+  let out = items.length
+    ? "<p>" + items.map(([label, s]) => `<span class="tag">${esc(label)}: precision ${pct(s.precision)} (${pct(s.low)}–${pct(s.high)})${s.recall != null ? `, recall ${pct(s.recall)}` : ""}</span>`).join("") + "</p>"
+    : '<p class="muted small">No precision or recall measured yet for the links this question uses.</p>';
+  if (absence) out += '<p class="small error">This question is about absence: a link the graph missed looks the same as no link.</p>';
+  return out;
+}
+
+async function status() {
+  let s;
+  try { s = await api("api/status"); }
+  catch (e) { $("summary").innerHTML = `<span class="error">Can't reach the service: ${esc(e.message)}</span>`; setTimeout(status, 5000); return; }
+  if (s.status === "starting") {
+    $("summary").textContent = `${s.message}… (${s.seconds} s; the first start downloads Neo4j and takes a few minutes)`;
+    setTimeout(status, 2000);
+    return;
+  }
+  if (s.status === "failed") {
+    $("summary").innerHTML = `<span class="error">${esc(s.message)}: ${esc(s.error)}</span>`;
+    return;
+  }
+  $("summary").textContent = s.summary;
+  $("sources").textContent = Object.entries(s.sources || {}).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`).join(" · ");
+  setAsk(s.plain_language);
+  const failed = (s.checks || []).filter((c) => c.count || c.error);
+  if (failed.length) {
+    $("checks").innerHTML = `<div class="banner"><b>${failed.length} of ${s.checks.length} checks failed.</b> The questions and the export stay closed until they pass; search, the entities and their links, and Query and API stay open, to look into what the checks found.` +
+      failed.map((c) => `<p><b>${esc(c.name)}</b> ${esc(c.description)}${c.error ? `<br>${esc(c.error)}` : ""}</p>${c.rows && c.rows.length ? table(c.rows) : ""}`).join("") + "</div>";
+  } else if (s.checks && s.checks.length) {
+    $("checks").innerHTML = `<details class="banner ok small"><summary>${s.checks.length === 1 ? "The check passes" : `All ${s.checks.length} checks pass`}</summary>${s.checks.map((c) => `<div>${esc(c.name)}: <span class="muted">${esc(c.description)}</span></div>`).join("")}</details>`;
+  }
+  loadQuestions();
+}
+
+function setAsk(on) {
+  $("ask").disabled = $("ask-btn").disabled = !on;
+  if (on) return;
+  $("ask").placeholder = "Not available on this service";
+  $("ask-note").innerHTML = 'Asking a new question needs an LLM to write the query, and this service was created without one (its <code>--llm-api-key</code> setting). Until then, run the questions below, or write a query yourself in <button class="name" id="to-query">Query and API</button>.';
+  $("to-query").addEventListener("click", () => showTab("query"));
+}
+
+async function loadQuestions() {
+  let qs;
+  try { qs = await api("api/questions"); }
+  catch (e) { $("question-list").innerHTML = `<p class="error">${esc(e.message)}</p>`; return; }
+  if (!qs.length) { $("question-list").innerHTML = '<p class="muted">No questions yet: add them to the questions file and recreate the service. The Entities and Query tabs work without them.</p>'; return; }
+  $("question-list").innerHTML = qs.map((q, i) => `<div class="card" id="q-${i}">
+      <div class="row"><div><h3>${esc(q.title)}</h3><div class="muted small">${esc(q.description)}</div>${q.absence ? '<span class="tag warn">about absence</span>' : ""}</div>
+      <button class="primary" data-run="${esc(q.name)}" data-target="a-${i}">Run</button></div>
+      <div class="answer" id="a-${i}" hidden></div></div>`).join("");
+  document.querySelectorAll("[data-run]").forEach((b) => b.addEventListener("click", () => runQuestion(b.dataset.run, $(b.dataset.target), b)));
+}
+
+async function runQuestion(name, out, button) {
+  out.hidden = false;
+  out.innerHTML = '<p class="muted">Running…</p>';
+  button.textContent = "Run again";
+  try {
+    const a = await api(`api/questions/${encodeURIComponent(name)}`);
+    out.innerHTML = `${figures(a.figures, a.absence)}<p class="muted small">${a.rows.length} row${a.rows.length === 1 ? "" : "s"}.${Object.keys(a.entities || {}).length ? " Click a name to open the entity." : ""}</p>${table(a.rows, a.entities)}${diagramButton(a.entities)}` +
+      `<details class="small"><summary class="muted">Query</summary><pre>${esc(a.cypher)}</pre></details>`;
+    bindNames(out);
+    bindDiagram(out, a.entities);
+  } catch (e) { out.innerHTML = `<p class="error">${esc(e.message)}</p>`; }
+}
+
+async function search() {
+  try {
+    const rows = await api(`api/search?q=${encodeURIComponent($("search").value)}`);
+    $("results").innerHTML = rows.map((r) => `<button class="result" data-node-id="${esc(r.id)}" aria-current="${r.id === current}"><b>${esc(r.name)}</b><br><span class="muted small">${esc(r.type)} · ${r.links} link${r.links === 1 ? "" : "s"}</span></button>`).join("") || '<p class="muted">Nothing found.</p>';
+    $("results").querySelectorAll("[data-node-id]").forEach((b) => b.addEventListener("click", () => showNode(b.dataset.nodeId, true)));
+    if (!current && rows.length && !$("search").value) showNode(rows[0].id);
+    return rows;
+  } catch (e) { $("results").innerHTML = `<p class="error">${esc(e.message)}</p>`; return []; }
+}
+
+async function showNode(id, scroll = false) {
+  current = id;
+  $("results").querySelectorAll("[data-node-id]").forEach((b) => b.setAttribute("aria-current", String(b.dataset.nodeId === id)));
+  $("entity").innerHTML = '<p class="muted">Loading…</p>';
+  try {
+    const n = await api(`api/node/${encodeURIComponent(id)}`);
+    const e = n.entity;
+    const links = n.links.map((l, i) => `<tr>
+        <td>${l.directed && !l.outgoing ? "← " : ""}${esc(l.label)}${l.directed && l.outgoing ? " →" : ""}</td>
+        <td><button class="name" data-node="${esc(l.other_id)}">${esc(l.other_name)}</button> <span class="muted small">${esc(l.other_type)}</span></td>
+        <td class="num">${l.evidence}</td>
+        <td>${(l.conditions || []).map((c) => `<span class="tag">${esc(c)}</span>`).join("")}</td>
+        <td><button class="secondary" aria-expanded="false" data-link="${esc(l.link_id)}" data-row="ev-${i}">Show evidence</button></td></tr>
+        <tr class="evidence" id="ev-${i}" hidden><td colspan="5"></td></tr>`).join("");
+    $("entity").innerHTML = `<h2>${esc(e.name)}</h2>
+      <p class="muted small">${esc(e.type)} · ${esc(e.id)}${e.nil ? " · not in the entity list" : ""} · mentioned in ${n.documents.length} document${n.documents.length === 1 ? "" : "s"}</p>` +
+      (links ? egoDiagram(e, n.links) + `<p class="small">${n.links.length} link${n.links.length === 1 ? "" : "s"}. Open the evidence to see the passages behind a link and who settled it.</p>
+        <div class="scroll"><table><tr><th>Relation</th><th>With</th><th>Passages</th><th>Conditions</th><th></th></tr>${links}</table></div>`
+        : '<p class="muted">No links to other entities.</p>');
+    bindNames($("entity"));
+    if (scroll && window.matchMedia("(max-width: 800px)").matches) $("entity").scrollIntoView({ behavior: "smooth", block: "start" });
+    $("entity").querySelectorAll("[data-link]").forEach((b) => b.addEventListener("click", () => toggleEvidence(b)));
+  } catch (err) { $("entity").innerHTML = `<p class="error">${esc(err.message)}</p>`; }
+}
+
+const EGO_LIMIT = 40;
+
+// The entity and its neighbours; the most supported links first when there are many.
+function egoDiagram(e, links) {
+  const others = new Map();
+  for (const l of links) if (!others.has(l.other_id) && others.size < EGO_LIMIT) others.set(l.other_id, { id: l.other_id, name: l.other_name, type: l.other_type });
+  const nodes = [{ id: e.id, name: e.name, type: e.type }, ...others.values()];
+  const shown = links.filter((l) => others.has(l.other_id)).map((l) => ({
+    head: l.outgoing ? e.id : l.other_id, tail: l.outgoing ? l.other_id : e.id, label: l.label, group: l.group, directed: l.directed,
+  }));
+  const total = new Set(links.map((l) => l.other_id)).size;
+  const note = total > others.size ? `<p class="muted small">The ${others.size} entities with the most supported links, of ${total}.</p>` : "";
+  return note + diagram(nodes, shown, e.id);
+}
+
+function marked(text, marks, head, tail) {
+  const spans = (marks || []).filter((m) => m && m.start != null).sort((a, b) => a.start - b.start);
+  let out = "", pos = 0;
+  for (const m of spans) {
+    if (m.start < pos) continue;
+    const cls = m.entity === head ? "head" : m.entity === tail ? "tail" : "";
+    out += esc(text.slice(pos, m.start)) + `<mark class="${cls}">${esc(text.slice(m.start, m.end))}</mark>`;
+    pos = m.end;
+  }
+  return out + esc(text.slice(pos));
+}
+
+async function toggleEvidence(button) {
+  const row = $(button.dataset.row);
+  const open = button.getAttribute("aria-expanded") === "true";
+  button.setAttribute("aria-expanded", String(!open));
+  button.textContent = open ? "Show evidence" : "Hide evidence";
+  row.hidden = open;
+  if (open || row.dataset.loaded) return;
+  const cell = row.firstElementChild;
+  cell.innerHTML = '<p class="muted">Loading…</p>';
+  try {
+    const l = await api(`api/link/${encodeURIComponent(button.dataset.link)}`);
+    row.dataset.loaded = "1";
+    cell.innerHTML = `<p class="small"><mark class="head">${esc(l.head_name)}</mark> ${esc(l.label)} <mark class="tail">${esc(l.tail_name)}</mark>
+        <span class="muted">· ${l.props.evidence} passage${l.props.evidence === 1 ? "" : "s"} · ${esc((l.props.methods || []).join(", "))}</span></p>` +
+      l.evidence.map((e) => `<div class="passage">${marked(e.text, e.marks, l.head_id, l.tail_id)}</div>
+        <p class="muted small" style="margin:0 0 8px">${esc(e.doc_id)}${e.doc_version ? ` v${esc(e.doc_version)}` : ""}${e.doc_date ? ` · ${esc(e.doc_date)}` : ""}${e.section ? ` · ${esc(e.section)}` : ""} · settled by ${esc(e.settled_by)}${(e.conditions || []).length ? " · " + esc(e.conditions.join(", ")) : ""}
+        ${Object.entries(e.answers || {}).map(([who, a]) => `<span class="tag">${esc(who)}: ${esc(a)}</span>`).join("")}</p>`).join("");
+  } catch (err) { cell.innerHTML = `<p class="error">${esc(err.message)}</p>`; }
+}
+
+async function ask() {
+  const question = $("ask").value.trim();
+  if (!question) return;
+  $("ask-out").innerHTML = '<p class="muted">Asking…</p>';
+  try {
+    const a = await api("api/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question }) });
+    $("ask-out").innerHTML = `<p><span class="tag warn">not checked</span></p><pre>${esc(a.cypher)}</pre>${table(a.rows, a.entities)}${diagramButton(a.entities)}`;
+    bindNames($("ask-out"));
+    bindDiagram($("ask-out"), a.entities);
+  } catch (e) { $("ask-out").innerHTML = `<p class="error">${esc(e.message)}</p>${e.data && e.data.cypher ? `<pre>${esc(e.data.cypher)}</pre>` : ""}`; }
+}
+
+async function runCypher() {
+  $("cypher-out").innerHTML = '<p class="muted">Running…</p>';
+  try {
+    const r = await api("api/cypher", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: $("cypher").value }) });
+    $("cypher-out").innerHTML = table(r.rows, r.entities) + diagramButton(r.entities);
+    bindNames($("cypher-out"));
+    bindDiagram($("cypher-out"), r.entities);
+  } catch (e) { $("cypher-out").innerHTML = `<p class="error">${esc(e.message)}</p>`; }
+}
+
+const EXAMPLES = {
+  "Most supported links": "MATCH (h:Entity)-[r]->(t:Entity) RETURN h.name AS head, type(r) AS label, t.name AS tail, r.evidence AS passages ORDER BY passages DESC LIMIT 20",
+  "Entities by type": "MATCH (e:Entity) RETURN e.type AS type, count(*) AS entities, sum(CASE WHEN e.nil THEN 1 ELSE 0 END) AS not_in_list ORDER BY entities DESC",
+  "Links by label": "MATCH ()-[r]->() WHERE r.group IS NOT NULL RETURN type(r) AS label, count(*) AS links, sum(r.evidence) AS passages ORDER BY links DESC",
+  "Documents with most mentions": "MATCH (d:Document)-[:HAS_PASSAGE]->(:Passage)-[m:MENTIONS]->() RETURN d.doc_id AS document, d.title AS title, count(m) AS mentions ORDER BY mentions DESC LIMIT 20",
+};
+$("examples").innerHTML = Object.keys(EXAMPLES).map((k) => `<button class="secondary" data-example="${esc(k)}">${esc(k)}</button>`).join("");
+document.querySelectorAll("[data-example]").forEach((b) => b.addEventListener("click", () => { $("cypher").value = EXAMPLES[b.dataset.example]; runCypher(); }));
+
+const base = new URL(".", location.href).href;
+const ROUTES = [
+  ["GET", "api/status", "Whether the graph is ready, what it was built from, and the checks"],
+  ["GET", "api/questions", "The questions"],
+  ["GET", "api/questions/<name>", "One question's answer, with the precision and recall of the links it uses. Parameters as query arguments"],
+  ["GET", "api/search?q=<text>", "Entities by name or id"],
+  ["GET", "api/node/<id>", "An entity, its links and the documents that mention it"],
+  ["GET", "api/link/<id>", "A link and the passages behind it, with each labeller's answer"],
+  ["POST", "api/cypher", 'A read-only query: {"query": "...", "params": {}}'],
+  ["POST", "api/subgraph", 'Entities and every link between them: {"ids": ["...", "..."]}'],
+  ["GET", "api/export", "The whole graph as JSON lines: entities, documents, passages, mentions, evidence and links"],
+  ["GET", "api/export?format=cypher", "The whole graph as a Cypher script, to load into an empty Neo4j database"],
+];
+$("api").innerHTML = "<tr><th>Method</th><th>URL</th><th>Returns</th></tr>" + ROUTES.map(([m, p, d]) => `<tr><td>${m}</td><td><code>${esc(base + p)}</code></td><td>${esc(d)}</td></tr>`).join("");
+
+for (const t of ["questions", "entities", "query"]) $(`tab-${t}`).addEventListener("click", () => showTab(t));
+$("run").addEventListener("click", runCypher);
+$("ask-btn").addEventListener("click", ask);
+$("ask").addEventListener("keydown", (e) => { if (e.key === "Enter") ask(); });
+$("search").addEventListener("input", () => { clearTimeout(window.searchTimer); window.searchTimer = setTimeout(search, 250); });
+status();
+</script>
+</body>
+</html>

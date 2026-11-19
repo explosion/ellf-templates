@@ -79,6 +79,16 @@ Train a named entity recognizer that finds food ingredients in cooking comments 
 | :---: | :---: | :---: | :---: | :---: | :---: |
 | 2 | 2 | 1 | 1 | ✓ | ✓ |
 
+### [Knowledge Graph from Documents](knowledge-graph-from-documents)
+
+Turn your documents into a knowledge graph of entities and relations, and measure how accurate it is. Entity mentions, links to your own entity list, and relations are labelled as separate steps by rules, models, LLMs or annotators, and each step is scored against gold labels from held-out documents, as is the final graph. The graph runs in Neo4j on your cluster, and every edge points back to the passages it came from.
+
+**Tags:** Information Extraction, Named Entity Recognition, Relation Extraction, Evaluation, spaCy, Neo4j
+
+| Tasks | Actions | Agents | Services | Custom recipes | Plans |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| 5 | 8 | 2 | 1 | 10 | 1 |
+
 ---
 
 _The list is kept in sync with [`templates.json`](templates.json), the source of truth for template metadata._

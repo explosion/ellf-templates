@@ -1,0 +1,10 @@
+{
+  "SAME": {
+    "description": "The marked mention refers to the candidate entry: the same thing, at the level the entry describes. Read the passage, the entry's name, other names and description.",
+    "do_not_mark": [
+      "an entry with the same name for a different thing, e.g. another species, product or place of the same name",
+      "a broader or narrower entry than the mention, unless the guidelines say to link to that level",
+      "a mention that only names a group or category the entry belongs to"
+    ]
+  }
+}

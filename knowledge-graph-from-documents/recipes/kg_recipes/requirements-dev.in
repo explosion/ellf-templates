@@ -1,0 +1,6 @@
+# Requirements for local development, which aren't installed into the recipe
+# image. The base recipes image already includes these.
+ellf-recipes-sdk
+starlette
+httpx
+pytest
