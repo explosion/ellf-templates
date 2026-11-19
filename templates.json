@@ -21,7 +21,13 @@
     "sample_data": false,
     "api_keys": [
       "TypeSafe"
-    ]
+    ],
+    "link": {
+      "title": "How Popp is saving 76% in token costs with Ellf and Jev",
+      "description": "Using this template, Popp made their NLP pipelines more accurate, faster and cheaper",
+      "tag": "Case Study",
+      "url": "https://explosion.ai/blog/popp-llms-jev"
+    }
   },
   {
     "name": "llm-classifier-eval",
