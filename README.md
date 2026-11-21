@@ -79,6 +79,16 @@ Train a named entity recognizer that finds food ingredients in cooking comments 
 | :---: | :---: | :---: | :---: | :---: | :---: |
 | 2 | 2 | 1 | 1 | ✓ | ✓ |
 
+### [NER Data from a Panel of Open-Weight LLMs](open-weight-ner)
+
+Annotate texts with named entities using a panel of open-weight LLMs on your own cluster's GPU, with no per-token API costs. Three models served by Ollama annotate every text, correction rules fix the errors they make systematically, a Dawid-Skene consensus learns how far to trust each model, and a short yes/no review of the entities it's least sure of corrects it into a silver-standard dataset, with an optional corrected evaluation set.
+
+**Use cases:** Named Entity Recognition, LLM Distillation
+
+| Tasks | Actions | Services | Plans | GPU |
+| :---: | :---: | :---: | :---: | :---: |
+| 2 | 11 | 1 | 1 | ✓ |
+
 ---
 
 _The list is kept in sync with [`templates.json`](templates.json), the source of truth for template metadata._
