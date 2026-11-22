@@ -39,6 +39,16 @@ Measure a classifier that's built on an LLM prompt against people, without chang
 | :---: | :---: | :---: | :---: | :---: | --- |
 | 4 | 2 | 1 | 1 | 1 | Your LLM provider |
 
+### [NER Data from a Panel of Open-Weight LLMs](create-ner-data)
+
+Annotate texts with named entities using a panel of open-weight LLMs on your own cluster's GPU, with no per-token API costs. Three models served by Ollama annotate every text, correction rules fix the errors they make systematically, a Dawid-Skene consensus learns how far to trust each model, and a short yes/no review of the entities it's least sure of corrects it into a silver-standard dataset, with an optional corrected evaluation set.
+
+**Tags:** Named Entity Recognition, LLM Distillation, spaCy, Ollama
+
+| Tasks | Actions | Services | Plans | GPU |
+| :---: | :---: | :---: | :---: | :---: |
+| 2 | 11 | 1 | 1 | ✓ |
+
 ### [Finding NER Annotation Errors by Jackknifing](ner-jackknifing)
 
 Find the errors in a large set of named entity annotations by checking every text against a model that never saw it. The annotations are split into folds, a model per fold trains on the others as parallel jobs and predicts the fold it didn't see, and a review shows only the texts where the prediction and the annotation disagree, round after round until the data is in good shape, before training the final model on the corrected annotations.
@@ -88,16 +98,6 @@ Train a named entity recognizer that finds food ingredients in cooking comments 
 | Tasks | Actions | Services | Plans | GPU | Sample data |
 | :---: | :---: | :---: | :---: | :---: | :---: |
 | 2 | 2 | 1 | 1 | ✓ | ✓ |
-
-### [NER Data from a Panel of Open-Weight LLMs](create-ner-data)
-
-Annotate texts with named entities using a panel of open-weight LLMs on your own cluster's GPU, with no per-token API costs. Three models served by Ollama annotate every text, correction rules fix the errors they make systematically, a Dawid-Skene consensus learns how far to trust each model, and a short yes/no review of the entities it's least sure of corrects it into a silver-standard dataset, with an optional corrected evaluation set.
-
-**Use cases:** Named Entity Recognition, LLM Distillation
-
-| Tasks | Actions | Services | Plans | GPU |
-| :---: | :---: | :---: | :---: | :---: |
-| 2 | 11 | 1 | 1 | ✓ |
 
 ---
 

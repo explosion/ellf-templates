@@ -54,6 +54,29 @@
     ]
   },
   {
+    "name": "create-ner-data",
+    "title": "NER Data from a Panel of Open-Weight LLMs",
+    "description": "Annotate texts with named entities using a panel of open-weight LLMs on your own cluster's GPU, with no per-token API costs. Three models served by Ollama annotate every text, correction rules fix the errors they make systematically, a Dawid-Skene consensus learns how far to trust each model, and a short yes/no review of the entities it's least sure of corrects it into a silver-standard dataset, with an optional corrected evaluation set.",
+    "tags": [
+      "Named Entity Recognition",
+      "LLM Distillation",
+      "spaCy",
+      "Ollama"
+    ],
+    "counts": {
+      "tasks": 2,
+      "actions": 11,
+      "agents": 0,
+      "services": 1,
+      "recipes": 0,
+      "plans": 1
+    },
+    "url": "https://github.com/explosion/ellf-templates/tree/main/create-ner-data",
+    "author": "Explosion",
+    "gpu": true,
+    "sample_data": false
+  },
+  {
     "name": "ner-jackknifing",
     "title": "Finding NER Annotation Errors by Jackknifing",
     "description": "Find the errors in a large set of named entity annotations by checking every text against a model that never saw it. The annotations are split into folds, a model per fold trains on the others as parallel jobs and predicts the fold it didn't see, and a review shows only the texts where the prediction and the annotation disagree, round after round until the data is in good shape, before training the final model on the corrected annotations.",
@@ -178,26 +201,5 @@
     "author": "Explosion",
     "gpu": true,
     "sample_data": true
-  },
-  {
-    "name": "create-ner-data",
-    "title": "NER Data from a Panel of Open-Weight LLMs",
-    "description": "Annotate texts with named entities using a panel of open-weight LLMs on your own cluster's GPU, with no per-token API costs. Three models served by Ollama annotate every text, correction rules fix the errors they make systematically, a Dawid-Skene consensus learns how far to trust each model, and a short yes/no review of the entities it's least sure of corrects it into a silver-standard dataset, with an optional corrected evaluation set.",
-    "use_cases": [
-      "Named Entity Recognition",
-      "LLM Distillation"
-    ],
-    "counts": {
-      "tasks": 2,
-      "actions": 11,
-      "agents": 0,
-      "services": 1,
-      "recipes": 0,
-      "plans": 1
-    },
-    "url": "https://github.com/explosion/ellf-templates/tree/main/create-ner-data",
-    "author": "Explosion",
-    "gpu": true,
-    "sample_data": false
   }
 ]
