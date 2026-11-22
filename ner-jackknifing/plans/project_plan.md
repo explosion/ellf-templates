@@ -2,7 +2,7 @@
 
 ## Goal
 
-Find and fix the errors in our named-entity annotations, @@Datasets/pii_gold@@, without
+Find and fix the errors in our named entity annotations, @@Datasets/pii_gold@@, without
 re-reviewing every text. A large annotated set always holds some errors: an entity
 missed, a boundary off by a word, a label the guidelines changed after the text was
 annotated. A model trained on the data learns them, and an evaluation set with them

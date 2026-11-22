@@ -1,8 +1,8 @@
 # Ellf Template: Finding NER Annotation Errors by Jackknifing
 
-Find the errors in a large set of named-entity annotations by checking every text against a model that never saw it. The annotations are split into folds and one model is trained per fold on all the others, as parallel jobs. Each model then predicts the fold it didn't see. Where a prediction disagrees with the annotation, the text goes to a review queue; texts where they agree are accepted without being shown. Each round's corrections become the next round's data, until the disagreements are mostly the model's mistakes rather than the data's. You end up with corrected annotations, a model trained on them, and guidelines that settle the cases the review turned up.
+Find the errors in a large set of named entity annotations by checking every text against a model that never saw it. The annotations are split into folds and one model is trained per fold on all the others, as parallel jobs. Each model then predicts the fold it didn't see. Where a prediction disagrees with the annotation, the text goes to a review queue; texts where they agree are accepted without being shown. Each round's corrections become the next round's data, until the disagreements are mostly the model's mistakes rather than the data's. You end up with corrected annotations, a model trained on them, and guidelines that settle the cases the review turned up.
 
-*Written for [Ellf](https://ellf.ai) on 2026-11-22, after the workflow in [Anonymizing court decisions with Balo](https://explosion.ai/blog/balo-pii-anonymization). Import it with the [`/ellf-template`](https://ellf.ai/docs/modules#template) skill, or set it up by hand with the commands below.*
+*Written for [Ellf](https://ellf.ai) on 2026-11-22. Import it with the [`/ellf-template`](https://ellf.ai/docs/modules#template) skill, or set it up by hand with the commands below.*
 
 ## Workflow
 
