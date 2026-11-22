@@ -1,0 +1,210 @@
+{
+  "PERSON": {
+    "description": "People, including online handles that stand for a person (\"pinkUZI writes\"), and performing groups: bands, duos, DJ acts and troupes (\"OutKast\", \"deadmau5\"). A leading \"the\" isn't part of a name.",
+    "do_not_mark": [
+      "Titles before a name: \"CEO\", \"President\", \"Mr.\" (mark \"Steve Jobs\" in \"CEO Steve Jobs\")",
+      "Groups of people with no name of their own (\"scientists\", \"analysts\")"
+    ],
+    "examples": [
+      {
+        "text": "Apple CEO Steve Jobs unveiled the iPod.",
+        "spans": [
+          {
+            "text": "Steve Jobs",
+            "label": "PERSON"
+          }
+        ]
+      },
+      {
+        "text": "pinkUZI writes \"Intel will announce a new chip.\"",
+        "spans": [
+          {
+            "text": "pinkUZI",
+            "label": "PERSON"
+          }
+        ]
+      }
+    ]
+  },
+  "ORG": {
+    "description": "Companies, government agencies, universities, standards bodies, news agencies, stock exchanges and other organized groups (\"Lockheed Martin Corp.\", \"the U.S. Secret Service\", \"Reuters\", \"EU\", \"NYSE\"), and stock tickers, which stand for their company (\"BA\" in \"Boeing (NYSE: BA)\"). A company is ORG when the text is about the company: what it announces, launches, buys, sells, reports or is bought by (\"Google said on Tuesday\", \"the purchase of Metails.com\"). A news source in parentheses, like \"(Reuters)\" or \"(SPACE.com)\", is ORG. Include a leading \"the\" in a name of several words when the text uses it (\"The Boeing Co.\", \"the U.S. Secret Service\"), but not in a one-word name or an abbreviation (\"the EU\" is \"EU\", \"the Pentagon\" is \"Pentagon\").",
+    "do_not_mark": [
+      "A company's name used for the service it offers: \"searched on Google\", \"Hotmail users\" (that's a product)",
+      "Products that are never companies, even when they act like subjects: \"Windows\", \"Firefox\", \"the iPod\"",
+      "A maker's name that's part of a product's trade name: \"Nintendo\" in \"Nintendo Switch\" (the whole name is one product)",
+      "Bands and other performing groups: they're PERSON"
+    ],
+    "examples": [
+      {
+        "text": "SAN FRANCISCO (Reuters) - Google said on Tuesday it would buy the start-up.",
+        "spans": [
+          {
+            "text": "Reuters",
+            "label": "ORG"
+          },
+          {
+            "text": "Google",
+            "label": "ORG"
+          }
+        ]
+      },
+      {
+        "text": "The Boeing Co. is planning to add live television to its flights.",
+        "spans": [
+          {
+            "text": "The Boeing Co.",
+            "label": "ORG"
+          }
+        ]
+      },
+      {
+        "text": "Regulators in the EU fined Microsoft Corp.",
+        "spans": [
+          {
+            "text": "EU",
+            "label": "ORG"
+          },
+          {
+            "text": "Microsoft Corp.",
+            "label": "ORG"
+          }
+        ]
+      },
+      {
+        "text": "Boeing (NYSE: BA) has hooked up with iPass, and Google launched a new service.",
+        "spans": [
+          {
+            "text": "Boeing",
+            "label": "ORG"
+          },
+          {
+            "text": "NYSE",
+            "label": "ORG"
+          },
+          {
+            "text": "BA",
+            "label": "ORG"
+          },
+          {
+            "text": "iPass",
+            "label": "ORG"
+          },
+          {
+            "text": "Google",
+            "label": "ORG"
+          }
+        ]
+      }
+    ]
+  },
+  "PRODUCT": {
+    "description": "Named products and services: hardware, software, websites and online services, games, vehicles, rockets and spacecraft, drugs, and named malware (\"Atlas V\", \"Windows XP\", \"Gmail\", \"PlayStation Portable\", \"Sasser\"). A company's name is PRODUCT only when the text is about the thing it offers, which people use or buy: \"searched on Google\", \"Hotmail users\". When the maker's name is part of the product's trade name, it's part of the span (\"Nintendo Switch\", \"Microsoft Office\"); when it only says who makes the product, it isn't (\"the Walkman from Sony\": \"Walkman\"). That depends on how the product is sold, so use what you know of it. A leading \"the\" is part of the span only when it's part of the title (\"The Sims 2\"), not otherwise (\"the iPod\" is \"iPod\").",
+    "do_not_mark": [
+      "A company's name when the text is about the company: what it announces, launches, buys, sells, reports or is bought by (\"Google launches a service\", \"the purchase of Metails.com\": that's ORG)",
+      "Technologies, protocols, standards and file formats: \"Wi-Fi\", \"Bluetooth\", \"MP3\", \"VoIP\", \"WiMAX\"",
+      "Generic product types: \"a disposable digital camera\", \"music download service\"",
+      "Product lines named only by their maker: \"Intel chips\" (the maker is ORG)",
+      "Initiatives, campaigns and programmes (\"an initiative called MakeLoveNotSpam\"), and instruments on a spacecraft or telescope",
+      "Part and model numbers on their own: \"P/N 9364U\""
+    ],
+    "examples": [
+      {
+        "text": "Microsoft released Windows XP Service Pack 2 for download.",
+        "spans": [
+          {
+            "text": "Windows XP Service Pack 2",
+            "label": "PRODUCT"
+          }
+        ]
+      },
+      {
+        "text": "Users who searched on Google found the iPod at half price.",
+        "spans": [
+          {
+            "text": "Google",
+            "label": "PRODUCT"
+          },
+          {
+            "text": "iPod",
+            "label": "PRODUCT"
+          }
+        ]
+      },
+      {
+        "text": "Google launched an SMS service for people who search on Google from their phones.",
+        "spans": [
+          {
+            "text": "Google",
+            "start": 56,
+            "end": 62,
+            "label": "PRODUCT"
+          }
+        ]
+      }
+    ]
+  },
+  "GPE": {
+    "description": "Countries, states, cities and other places with a government (\"Canada\", \"Missouri\", \"Toronto\"), also when used as a modifier (\"U.S. regulators\"). A city and its state or country are two GPEs (\"Irvine, California\": \"Irvine\" and \"California\"; \"SAN JOSE, Calif.\": \"SAN JOSE\" and \"Calif.\"), except \"Washington, D.C.\", which is one. Include a leading \"the\" in a name of several words when the text uses it (\"the United States\"), and in a name that takes \"the\" (\"the US\", \"the UK\", \"the Netherlands\", \"the Philippines\", \"The Hague\") when the \"the\" goes with the name itself (\"The US has a new cyber chief\", \"in the UK\"), not when it goes with a noun after it (\"the US dollar\": \"US\"; \"the Owings Mills company\": \"Owings Mills\"). Leave it out of other one-word names and abbreviations.",
+    "do_not_mark": [
+      "Places without a government: continents and regions, planets and moons, bodies of water, neighbourhoods and buildings (\"Europe\", \"Silicon Valley\", \"Saturn\", \"the Capitol\")",
+      "Nationalities: \"German\", \"Japanese\""
+    ],
+    "examples": [
+      {
+        "text": "TOKYO (Reuters) - Sony said sales in the United States and Canada rose.",
+        "spans": [
+          {
+            "text": "TOKYO",
+            "label": "GPE"
+          },
+          {
+            "text": "the United States",
+            "label": "GPE"
+          },
+          {
+            "text": "Canada",
+            "label": "GPE"
+          }
+        ]
+      },
+      {
+        "text": "Broadcom, based in Irvine, Calif., sells chips in the UK and to U.S. regulators.",
+        "spans": [
+          {
+            "text": "Irvine",
+            "label": "GPE"
+          },
+          {
+            "text": "Calif.",
+            "label": "GPE"
+          },
+          {
+            "text": "the UK",
+            "label": "GPE"
+          },
+          {
+            "text": "U.S.",
+            "label": "GPE"
+          }
+        ]
+      },
+      {
+        "text": "The US space agency priced it in US dollars.",
+        "spans": [
+          {
+            "text": "US",
+            "start": 4,
+            "end": 6,
+            "label": "GPE"
+          },
+          {
+            "text": "US",
+            "start": 33,
+            "end": 35,
+            "label": "GPE"
+          }
+        ]
+      }
+    ]
+  }
+}

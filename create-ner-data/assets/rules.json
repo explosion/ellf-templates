@@ -1,0 +1,68 @@
+[
+  {
+    "type": "drop_handles_and_links",
+    "why": "Handles and links aren't names: a span right after # or @, or inside a URL, is dropped."
+  },
+  {
+    "type": "match",
+    "patterns": [
+      [
+        {
+          "LOWER": {
+            "IN": [
+              "'s",
+              "'"
+            ]
+          }
+        }
+      ]
+    ],
+    "action": "strip_end",
+    "why": "Whole names: a trailing \"'s\" is part of the span only when it's part of the name (\"Intel Corp.'s\" is \"Intel Corp.\")."
+  },
+  {
+    "type": "match",
+    "patterns": [
+      [
+        {
+          "ORTH": "the"
+        }
+      ]
+    ],
+    "labels": [
+      "PRODUCT",
+      "PERSON"
+    ],
+    "action": "strip",
+    "why": "PRODUCT and PERSON: a leading \"the\" is part of the span only when it's part of the title (\"the iPod\" is \"iPod\")."
+  },
+  {
+    "type": "leading_the",
+    "labels": [
+      "ORG",
+      "GPE"
+    ],
+    "model": "en_core_web_sm",
+    "why": "ORG and GPE: a leading \"the\" goes in a name of several words (\"the U.S. Secret Service\"), not in one word or an abbreviation (\"the EU\" is \"EU\"). Annotators that drop or keep it split the votes and lose the entity, so every annotator is brought to the convention."
+  },
+  {
+    "type": "attached_the",
+    "phrases": [
+      "US",
+      "U.S.",
+      "USA",
+      "UK",
+      "U.K.",
+      "Netherlands",
+      "Philippines",
+      "Bahamas",
+      "Gambia",
+      "Hague"
+    ],
+    "labels": [
+      "GPE"
+    ],
+    "model": "en_core_web_sm",
+    "why": "GPE: a place name that takes \"the\" (\"the US\", \"The Hague\") includes it when the \"the\" goes with the name (\"The US has...\"), not with a noun after it (\"the US dollar\")."
+  }
+]
