@@ -39,6 +39,16 @@ Measure a classifier that's built on an LLM prompt against people, without chang
 | :---: | :---: | :---: | :---: | :---: | --- |
 | 4 | 2 | 1 | 1 | 1 | Your LLM provider |
 
+### [Finding NER Annotation Errors by Jackknifing](ner-jackknifing)
+
+Find the errors in a large set of named entity annotations by checking every text against a model that never saw it. The annotations are split into folds, a model per fold trains on the others as parallel jobs and predicts the fold it didn't see, and a review shows only the texts where the prediction and the annotation disagree, round after round until the data is in good shape, before training the final model on the corrected annotations.
+
+**Tags:** Named Entity Recognition, Evaluation, Model Training, spaCy
+
+| Tasks | Actions | Services | Custom recipes | Plans |
+| :---: | :---: | :---: | :---: | :---: |
+| 1 | 14 | 1 | 1 | 1 |
+
 ### [Helpdesk Routing with Jev](helpdesk-routing)
 
 Find out whether Jev is good enough to route IT support tickets to the right technician by problem area. Settles the label scheme in a pilot with a Gemini second opinion, builds a human-labelled evaluation set with an agreement check and a blind slip check, scores Jev against a bar agreed in advance, and sets up daily routing with a monthly problem-area report.
