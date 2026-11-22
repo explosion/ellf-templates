@@ -1,0 +1,12 @@
+[
+  {
+    "name": "most-linked",
+    "title": "Which entities have the most links?",
+    "description": "A first look at the graph. Replace with your own questions.",
+    "cypher": "MATCH (e:Entity)-[r]-(:Entity) WHERE type(r) <> 'MENTIONS' RETURN e.name AS entity, e.type AS type, count(r) AS links ORDER BY links DESC LIMIT $limit",
+    "params": {"limit": 20},
+    "expected": null,
+    "absence": false,
+    "uses": []
+  }
+]

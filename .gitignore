@@ -13,6 +13,7 @@ build/
 dist/
 .venv/
 venv/
+.ruff_cache/
 
 # Secrets and local data (templates ship data only in assets/)
 .env

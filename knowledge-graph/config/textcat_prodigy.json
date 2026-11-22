@@ -1,0 +1,1 @@
+{"show_flag": true, "custom_theme": {"cardMaxWidth": 960}, "global_css": ".prodigy-content { text-align: left; font-size: 16px; line-height: 1.6; white-space: pre-wrap; max-height: 45vh; overflow-y: auto; } .prodigy-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 8px; } .prodigy-option { margin: 0 0 6px; }"}
