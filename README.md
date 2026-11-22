@@ -79,6 +79,16 @@ Train a named entity recognizer that finds food ingredients in cooking comments 
 | :---: | :---: | :---: | :---: | :---: | :---: |
 | 2 | 2 | 1 | 1 | ✓ | ✓ |
 
+### [Finding NER Annotation Errors by Jackknifing](ner-jackknifing)
+
+Find the errors in a large set of named-entity annotations by checking every text against a model that never saw it. The annotations are split into folds, a model per fold trains on the others as parallel jobs and predicts the fold it didn't see, and a review shows only the texts where the prediction and the annotation disagree, round after round until the data is in good shape, before training the final model on the corrected annotations.
+
+**Tags:** Named Entity Recognition, Evaluation, Model Training, spaCy
+
+| Tasks | Actions | Services | Custom recipes | Plans |
+| :---: | :---: | :---: | :---: | :---: |
+| 1 | 14 | 1 | 1 | 1 |
+
 ---
 
 _The list is kept in sync with [`templates.json`](templates.json), the source of truth for template metadata._
