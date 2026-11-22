@@ -1,0 +1,8 @@
+__title__ = "jackknife_recipes"
+__name__ = "jackknife_recipes"
+__version__ = "0.1.0"
+__summary__ = "Split NER annotations into folds, to find annotation errors by jackknifing"
+__uri__ = ""
+__author__ = "Explosion"
+__email__ = ""
+__license__ = "MIT"

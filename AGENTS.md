@@ -17,7 +17,7 @@ A JSON list with one object per template, in the same order as the README, with 
 | `name` | The directory name, e.g. `helpdesk-routing`. |
 | `title` | Title Case, from the README's `# Ellf Template: <title>` heading. |
 | `description` | Two or three sentences: what the project does, then what the workflow covers. Plain text, no markdown. |
-| `use_cases` | Reuse existing values where they fit: `Information Extraction`, `Named Entity Recognition`, `Text Classification`, `Relation Extraction`, `LLM Distillation`, `PDF Processing`, `Evaluation`, `Getting Started` (for simple templates to start with, listed first). |
+| `tags` | Tags for the directory filters on the website, unique and Title Case where it applies. First the use cases: `Getting Started` (for simple templates to start with, listed first), `Information Extraction`, `Named Entity Recognition`, `Text Classification`, `PDFs`, `Images`, `Audio & Video`, `Linguistic Annotation`, `LLM Distillation`, `Evaluation`, `Model Training`, `Data Import & Export`. Then the tools, libraries and services the template's workflows use, by product name, from the recipes and custom recipe code it uses: `spaCy`, `Hugging Face`, `Google Gemini`, `OpenAI`, `Jev`, `Streamlit`, `marimo`, `Docling`, `Tesseract`, `MCP`, `Amazon S3`, `Google Cloud Storage`. Name the tool, not the provider you get a key from: `Google Gemini` here, `Google AI` under `api_keys`. Don't tag tools that only appear in the sample data. The directory sorts the tags into use cases and integrations itself, so reuse these values where they fit. |
 | `counts` | `tasks`, `actions`, `agents`, `services`: the number of sections under the README's Tasks, Actions, Agents and Services headings. `recipes`: the custom recipes in `recipes/`, i.e. the functions decorated with a recipe decorator such as `@task_recipe` or `@action_recipe`, not the number of packages (built-in recipes don't count). `plans`: the files in `plans/`. Include every key, with `0` where there are none. |
 | `url` | `https://github.com/explosion/ellf-templates/tree/main/<name>` |
 | `author` | Who made it, e.g. `Explosion`. Leave it out if unknown. |
@@ -36,19 +36,20 @@ Add or update the template's entry under "## Templates", in the same order as `t
 
 <description>
 
-**Use cases:** Text Classification, Evaluation
+**Tags:** Text Classification, Evaluation, Jev, Google Gemini
 
 | Tasks | Actions | Agents | Plans | Sample data | API keys |
 | :---: | :---: | :---: | :---: | :---: | --- |
 | 9 | 3 | 1 | 4 | ✓ | Google AI, TypeSafe |
 ```
 
-- **Use cases:** `use_cases`, comma-separated, as plain text.
+- **Tags:** `tags`, comma-separated, as plain text.
 - The table has a column for each non-zero count, in the order Tasks, Actions, Agents, Services, Custom recipes (`recipes`), Plans.
 - Then GPU, with ✓ if `gpu` is true, Sample data, with ✓ if `sample_data` is true, and API keys, with `api_keys` comma-separated. Leave any of these columns out if it would be empty.
 
 ## Checks
 
 - `python -m json.tool templates.json` passes, and every `name` has a directory with a `README.md`.
+- `tags` only uses the values listed above, unless the template really needs a new one. Then also add it to the directory (`content/directory.json` on the website), under `use_cases` or `integrations`.
 - The README has one entry per template, in the same order, matching `templates.json`.
 - Every link in the README resolves.
